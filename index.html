@@ -3,57 +3,85 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Quests Mini App</title>
+  <title>Quests</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app">
-    <header class="header">
-      <h1>Quests</h1>
-      <div class="user-info" id="userInfo">Загрузка...</div>
-    </header>
+  <div id="app" class="app">
+    <div id="screen-loading" class="screen active">
+      <div class="neon-loader"></div>
+      <p class="neon-text">Загрузка...</p>
+    </div>
 
-    <nav class="tabs">
-      <button class="tab active" data-tab="profile">Профиль</button>
-      <button class="tab" data-tab="games">Игры</button>
-      <button class="tab" data-tab="shop">Магазин</button>
-    </nav>
+    <div id="screen-blocked" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Доступ запрещён</h2>
+        <p>Откройте приложение через Telegram</p>
+      </div>
+    </div>
 
-    <main>
-      <section id="profile" class="tab-content active">
-        <div class="card">
-          <div class="profile-row">
-            <span class="label">Никнейм</span>
-            <span class="value" id="nickname">—</span>
-          </div>
-          <div class="profile-row">
-            <span class="label">Ранг</span>
-            <span class="value" id="rank">—</span>
-          </div>
-          <div class="profile-row">
-            <span class="label">Очки</span>
-            <span class="value" id="points">—</span>
-          </div>
-          <div class="profile-row" id="gameRow" style="display:none">
-            <span class="label">Игра</span>
-            <span class="value" id="currentGame">—</span>
-          </div>
-        </div>
-        <button class="btn secondary" id="refreshBtn">Обновить</button>
-      </section>
+    <div id="screen-register" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Регистрация</h2>
+        <p class="hint">Введите ваш никнейм в Minecraft</p>
+        <input type="text" id="nickInput" class="neon-input" placeholder="Никнейм" maxlength="16" autocomplete="off">
+        <div id="nickError" class="error-text"></div>
+        <button id="btnNextNick" class="neon-btn">Далее</button>
+        <button id="btnSupportFromReg" class="neon-btn secondary" style="display:none">Связь с тех.поддержкой</button>
+      </div>
+    </div>
 
-      <section id="games" class="tab-content">
-        <div class="card" id="gamesList"></div>
-        <p class="hint">Бронирование пока через бота</p>
-      </section>
+    <div id="screen-taken" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Никнейм занят</h2>
+        <p class="error-text">Данный никнейм уже занят!</p>
+        <button id="btnBackToNick" class="neon-btn secondary">Обратно</button>
+        <button id="btnMyAccount" class="neon-btn">Это мой аккаунт</button>
+      </div>
+    </div>
 
-      <section id="shop" class="tab-content">
-        <div class="card" id="shopList"></div>
-        <p class="hint">Покупки пока через бота</p>
-      </section>
-    </main>
+    <div id="screen-claim" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Восстановление</h2>
+        <button class="neon-btn claim-option" data-claim="1">Профиль был привязан на другой ТГ-аккаунт (мой), я его потерял</button>
+        <button class="neon-btn claim-option" data-claim="2">Я ещё не регистрировал этот никнейм / кто-то забрал мой никнейм</button>
+        <button class="neon-btn claim-option" data-claim="3">Другое</button>
+        <button id="btnClaimBack" class="neon-btn secondary">Обратно</button>
+      </div>
+    </div>
+
+    <div id="screen-claim1" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Укажите данные</h2>
+        <p class="hint">Старый Telegram-аккаунт и что с ним случилось</p>
+        <textarea id="claim1Text" class="neon-textarea" placeholder="Например: @old_username, аккаунт взломали / удалён..."></textarea>
+        <button id="btnSendClaim1" class="neon-btn">Отправить</button>
+        <button id="btnClaim1Back" class="neon-btn secondary">Обратно</button>
+      </div>
+    </div>
+
+    <div id="screen-confirm" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Подтверждение</h2>
+        <p id="confirmText" class="hint"></p>
+        <button id="btnConfirmNext" class="neon-btn" disabled>Далее</button>
+        <button id="btnConfirmBack" class="neon-btn secondary">Обратно</button>
+        <div id="confirmError" class="error-text"></div>
+      </div>
+    </div>
+
+    <div id="screen-profile" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Профиль</h2>
+        <div class="profile-row"><span>Никнейм</span><span id="pNick">—</span></div>
+        <div class="profile-row"><span>Ранг</span><span id="pRank">—</span></div>
+        <div class="profile-row"><span>Очки</span><span id="pPoints">—</span></div>
+        <div class="profile-row" id="pGameRow" style="display:none"><span>Игра</span><span id="pGame">—</span></div>
+        <button id="btnRefresh" class="neon-btn secondary">Обновить</button>
+      </div>
+    </div>
   </div>
   <script src="app.js"></script>
 </body>
-</html> 
+</html>
