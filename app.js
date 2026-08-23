@@ -10,7 +10,8 @@ function show(id) {
 }
 
 function api(path, options = {}) {
-  return fetch(`\( {API_URL} \){path}`, {
+  const url = `${API_URL}${path}`;
+  return fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
