@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Quests Mini App</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>Quests</h1>
+      <div class="user-info" id="userInfo">Загрузка...</div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="profile">Профиль</button>
+      <button class="tab" data-tab="games">Игры</button>
+      <button class="tab" data-tab="shop">Магазин</button>
+    </nav>
+
+    <main>
+      <section id="profile" class="tab-content active">
+        <div class="card">
+          <div class="profile-row">
+            <span class="label">Никнейм</span>
+            <span class="value" id="nickname">—</span>
+          </div>
+          <div class="profile-row">
+            <span class="label">Ранг</span>
+            <span class="value" id="rank">—</span>
+          </div>
+          <div class="profile-row">
+            <span class="label">Очки</span>
+            <span class="value" id="points">—</span>
+          </div>
+          <div class="profile-row" id="gameRow" style="display:none">
+            <span class="label">Игра</span>
+            <span class="value" id="currentGame">—</span>
+          </div>
+        </div>
+        <button class="btn secondary" id="refreshBtn">Обновить</button>
+      </section>
+
+      <section id="games" class="tab-content">
+        <div class="card" id="gamesList"></div>
+        <p class="hint">Бронирование пока через бота</p>
+      </section>
+
+      <section id="shop" class="tab-content">
+        <div class="card" id="shopList"></div>
+        <p class="hint">Покупки пока через бота</p>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html> 
