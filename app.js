@@ -4,7 +4,7 @@ tg.expand();
 tg.setHeaderColor('#0f0f0f');
 tg.setBackgroundColor('#0f0f0f');
 
-const API_URL = 'https://d19.aurorix.net:25946';
+const API_URL = 'https://d1.aurorix.net:26312';
 
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
