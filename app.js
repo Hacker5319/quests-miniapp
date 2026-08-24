@@ -1,5 +1,5 @@
 const tg = window.Telegram.WebApp;
-const API_URL = 'https://api.fantastworld.ru:26312';
+const API_URL = 'https://api.fantastworld.ru';
 
 let currentNick = '';
 let confirmTimer = null;
