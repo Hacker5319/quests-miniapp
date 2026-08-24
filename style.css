@@ -126,3 +126,137 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .neon-text { text-align: center; color: var(--neon); }
+
+.badge {
+  display: inline-block;
+  background: var(--danger);
+  color: #fff;
+  border-radius: 50%;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.tickets-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin: 12px 0;
+}
+
+.ticket-item {
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.ticket-item:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.ticket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.ticket-id {
+  font-weight: bold;
+  color: var(--neon);
+}
+
+.ticket-status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.ticket-status.open {
+  background: rgba(0, 255, 159, 0.2);
+  color: var(--success);
+}
+
+.ticket-status.closed {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+}
+
+.ticket-nick {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.ticket-preview {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ticket-messages {
+  max-height: 350px;
+  overflow-y: auto;
+  margin: 12px 0;
+}
+
+.message {
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.message.user {
+  background: rgba(0, 243, 255, 0.1);
+  border-left: 2px solid var(--neon);
+}
+
+.message.admin {
+  background: rgba(188, 19, 254, 0.1);
+  border-left: 2px solid var(--neon2);
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.message-sender {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.message-time {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.message-unread {
+  color: var(--neon);
+  font-size: 8px;
+}
+
+.message-text {
+  font-size: 14px;
+  word-wrap: break-word;
+}
+
+.ticket-status-bar {
+  text-align: center;
+  padding: 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+#ticketReplyArea {
+  margin-top: 12px;
+}
+
+#ticketAdminActions {
+  margin-top: 12px;
+}
