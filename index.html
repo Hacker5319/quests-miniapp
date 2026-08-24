@@ -79,6 +79,51 @@
         <div class="profile-row"><span>Очки</span><span id="pPoints">—</span></div>
         <div class="profile-row" id="pGameRow" style="display:none"><span>Игра</span><span id="pGame">—</span></div>
         <button id="btnRefresh" class="neon-btn secondary">Обновить</button>
+        <button id="btnSupport" class="neon-btn" style="margin-top:10px;position:relative">
+          Тех.поддержка
+          <span id="supportBadge" class="badge" style="display:none;position:absolute;top:-8px;right:-8px;background:#ff2e63;color:#fff;border-radius:50%;padding:2px 8px;font-size:12px;font-weight:bold;"></span>
+        </button>
+      </div>
+    </div>
+
+    <div id="screen-support" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Тех.поддержка</h2>
+        <button id="btnNewTicket" class="neon-btn">Создать тикет</button>
+        <div id="ticketsList" class="tickets-list"></div>
+        <button id="btnSupportBack" class="neon-btn secondary">Назад</button>
+        <div id="supportError" class="error-text"></div>
+      </div>
+    </div>
+
+    <div id="screen-new-ticket" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Новый тикет</h2>
+        <p class="hint">Опишите вашу проблему</p>
+        <textarea id="ticketText" class="neon-textarea" placeholder="Подробно опишите ситуацию..."></textarea>
+        <button id="btnSendTicket" class="neon-btn">Отправить</button>
+        <button id="btnNewTicketBack" class="neon-btn secondary">Назад</button>
+        <div id="ticketError" class="error-text"></div>
+      </div>
+    </div>
+
+    <div id="screen-ticket" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Тикет <span id="ticketIdDisplay"></span></h2>
+        <div class="ticket-status-bar">
+          <span id="ticketStatusDisplay"></span>
+        </div>
+        <div id="ticketMessages" class="ticket-messages"></div>
+        <div id="ticketReplyArea">
+          <textarea id="ticketReply" class="neon-textarea" placeholder="Введите сообщение..."></textarea>
+          <button id="btnSendTicketReply" class="neon-btn">Отправить</button>
+        </div>
+        <div id="ticketAdminActions">
+          <button id="btnCloseTicket" class="neon-btn" style="background:var(--danger)">Закрыть тикет</button>
+          <button id="btnReopenTicket" class="neon-btn secondary" style="display:none">Открыть тикет</button>
+        </div>
+        <button id="btnTicketBack" class="neon-btn secondary">Назад</button>
+        <div id="ticketError" class="error-text"></div>
       </div>
     </div>
   </div>
