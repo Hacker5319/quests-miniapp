@@ -3,6 +3,9 @@ const API_URL = 'https://api.fantastworld.ru';
 
 let currentNick = '';
 let confirmTimer = null;
+let currentTicketId = null;
+let supportMessages = [];
+let isAdmin = false;
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -40,6 +43,15 @@ async function init() {
     if (data.nickname && data.nickname !== ' ') {
       renderProfile(data);
       show('screen-profile');
+      
+      const profile = await api('/api/profile');
+      isAdmin = profile.rank >= 5;
+      
+      const unread = await api('/api/support/unread');
+      if (unread.count > 0) {
+        document.getElementById('supportBadge').style.display = 'inline';
+        document.getElementById('supportBadge').textContent = unread.count;
+      }
     } else {
       document.getElementById('btnSupportFromReg').style.display = 'block';
       show('screen-register');
@@ -198,7 +210,8 @@ async function sendSupport(type) {
 
 document.getElementById('btnSupportFromReg').addEventListener('click', () => {
   currentNick = '';
-  sendSupport(3);
+  show('screen-support');
+  loadTickets();
 });
 
 document.getElementById('btnRefresh').addEventListener('click', async () => {
@@ -208,5 +221,220 @@ document.getElementById('btnRefresh').addEventListener('click', async () => {
     tg.HapticFeedback?.impactOccurred('light');
   } catch (e) {}
 });
+
+document.getElementById('btnSupport').addEventListener('click', () => {
+  show('screen-support');
+  loadTickets();
+});
+
+document.getElementById('btnSupportBack').addEventListener('click', () => {
+  show('screen-profile');
+  updateSupportBadge();
+});
+
+document.getElementById('btnNewTicket').addEventListener('click', () => {
+  show('screen-new-ticket');
+});
+
+document.getElementById('btnNewTicketBack').addEventListener('click', () => {
+  show('screen-support');
+});
+
+document.getElementById('btnSendTicket').addEventListener('click', async () => {
+  const text = document.getElementById('ticketText').value.trim();
+  if (text.length < 5) {
+    document.getElementById('ticketError').textContent = 'Минимум 5 символов';
+    return;
+  }
+
+  document.getElementById('btnSendTicket').disabled = true;
+  document.getElementById('ticketError').textContent = '';
+
+  try {
+    const res = await api('/api/support/create', {
+      method: 'POST',
+      body: JSON.stringify({ text })
+    });
+    
+    if (res.success) {
+      document.getElementById('ticketText').value = '';
+      show('screen-support');
+      loadTickets();
+      tg.HapticFeedback?.impactOccurred('success');
+    } else {
+      document.getElementById('ticketError').textContent = res.error || 'Ошибка';
+    }
+  } catch (e) {
+    document.getElementById('ticketError').textContent = 'Ошибка сервера';
+  } finally {
+    document.getElementById('btnSendTicket').disabled = false;
+  }
+});
+
+async function loadTickets() {
+  try {
+    const tickets = await api('/api/support/tickets');
+    const container = document.getElementById('ticketsList');
+    container.innerHTML = '';
+
+    if (tickets.length === 0) {
+      container.innerHTML = '<p class="hint">Нет тикетов</p>';
+      return;
+    }
+
+    for (const ticket of tickets) {
+      const div = document.createElement('div');
+      div.className = 'ticket-item';
+      
+      const statusClass = ticket.status === 'open' ? 'open' : 'closed';
+      const statusText = ticket.status === 'open' ? '🟢 Открыт' : '🔴 Закрыт';
+      
+      div.innerHTML = `
+        <div class="ticket-header" data-id="${ticket.id}">
+          <span class="ticket-id">#${ticket.id}</span>
+          <span class="ticket-status ${statusClass}">${statusText}</span>
+          <span class="ticket-nick">${ticket.nickname}</span>
+        </div>
+        <div class="ticket-preview">${ticket.lastMessage || 'Нет сообщений'}</div>
+      `;
+      
+      div.querySelector('.ticket-header').addEventListener('click', () => {
+        openTicket(ticket.id);
+      });
+      
+      container.appendChild(div);
+    }
+  } catch (e) {
+    document.getElementById('ticketsList').innerHTML = '<p class="error-text">Ошибка загрузки</p>';
+  }
+}
+
+async function openTicket(ticketId) {
+  try {
+    const ticket = await api(`/api/support/ticket/${ticketId}`);
+    currentTicketId = ticketId;
+    supportMessages = ticket.messages || [];
+    
+    show('screen-ticket');
+    renderTicket(ticket);
+  } catch (e) {
+    document.getElementById('ticketError').textContent = 'Ошибка загрузки тикета';
+  }
+}
+
+function renderTicket(ticket) {
+  document.getElementById('ticketIdDisplay').textContent = `#${ticket.id}`;
+  document.getElementById('ticketStatusDisplay').textContent = ticket.status === 'open' ? '🟢 Открыт' : '🔴 Закрыт';
+  
+  const container = document.getElementById('ticketMessages');
+  container.innerHTML = '';
+  
+  for (const msg of ticket.messages) {
+    const div = document.createElement('div');
+    div.className = `message ${msg.senderType === 'admin' ? 'admin' : 'user'}`;
+    
+    const rank = msg.rank || 0;
+    const rankName = ['[0] Пользователь', '[1] Игрок', '[2] Бывалый', '[3] Опытный', '[4] Элита', '[5] Ведущий', '[6] Главный'][rank] || '[0] Пользователь';
+    const color = ['#808080', '#FFFFFF', '#55FF55', '#55FFFF', '#FFAA00', '#FF5555', '#FF00FF'][rank] || '#FFFFFF';
+    
+    div.innerHTML = `
+      <div class="message-header">
+        <span class="message-sender" style="color:${color}">${rankName} ${msg.nickname}</span>
+        <span class="message-time">${new Date(msg.timestamp).toLocaleString()}</span>
+        ${msg.read ? '' : '<span class="message-unread">●</span>'}
+      </div>
+      <div class="message-text">${msg.text}</div>
+    `;
+    
+    container.appendChild(div);
+  }
+  
+  if (ticket.status === 'open') {
+    document.getElementById('ticketReplyArea').style.display = 'block';
+    document.getElementById('ticketCloseBtn').style.display = 'block';
+  } else {
+    document.getElementById('ticketReplyArea').style.display = 'none';
+    document.getElementById('ticketCloseBtn').style.display = 'none';
+  }
+  
+  if (isAdmin) {
+    document.getElementById('ticketAdminActions').style.display = 'block';
+  } else {
+    document.getElementById('ticketAdminActions').style.display = 'none';
+  }
+}
+
+document.getElementById('btnTicketBack').addEventListener('click', () => {
+  show('screen-support');
+  loadTickets();
+  updateSupportBadge();
+});
+
+document.getElementById('btnSendTicketReply').addEventListener('click', async () => {
+  const text = document.getElementById('ticketReply').value.trim();
+  if (text.length < 1) return;
+  
+  document.getElementById('btnSendTicketReply').disabled = true;
+  
+  try {
+    const res = await api('/api/support/reply', {
+      method: 'POST',
+      body: JSON.stringify({ ticketId: currentTicketId, text })
+    });
+    
+    if (res.success) {
+      document.getElementById('ticketReply').value = '';
+      openTicket(currentTicketId);
+      tg.HapticFeedback?.impactOccurred('light');
+    }
+  } catch (e) {
+    document.getElementById('ticketError').textContent = 'Ошибка отправки';
+  } finally {
+    document.getElementById('btnSendTicketReply').disabled = false;
+  }
+});
+
+document.getElementById('btnCloseTicket').addEventListener('click', async () => {
+  if (!confirm('Закрыть тикет?')) return;
+  
+  try {
+    await api('/api/support/close', {
+      method: 'POST',
+      body: JSON.stringify({ ticketId: currentTicketId })
+    });
+    openTicket(currentTicketId);
+    tg.HapticFeedback?.impactOccurred('success');
+  } catch (e) {
+    document.getElementById('ticketError').textContent = 'Ошибка';
+  }
+});
+
+document.getElementById('btnReopenTicket').addEventListener('click', async () => {
+  try {
+    await api('/api/support/reopen', {
+      method: 'POST',
+      body: JSON.stringify({ ticketId: currentTicketId })
+    });
+    openTicket(currentTicketId);
+    tg.HapticFeedback?.impactOccurred('success');
+  } catch (e) {
+    document.getElementById('ticketError').textContent = 'Ошибка';
+  }
+});
+
+async function updateSupportBadge() {
+  try {
+    const unread = await api('/api/support/unread');
+    const badge = document.getElementById('supportBadge');
+    if (unread.count > 0) {
+      badge.style.display = 'inline';
+      badge.textContent = unread.count;
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch (e) {}
+}
+
+setInterval(updateSupportBadge, 30000);
 
 init();
