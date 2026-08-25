@@ -354,9 +354,16 @@ function renderTicket(ticket) {
       div.classList.add('group-start');
     }
 
-    const displayName = msg.nickname && msg.nickname !== 'null' && msg.nickname !== null
-      ? msg.nickname
-      : (msg.telegramId ? `@${msg.telegramId}` : 'Неизвестно');
+    let displayName;
+    let rank = msg.rank || 0;
+    
+    if (rank > 0 && msg.nickname && msg.nickname !== 'null' && msg.nickname !== 'Неизвестно') {
+      displayName = msg.nickname;
+    } else if (msg.telegramId) {
+      displayName = `@${msg.telegramId}`;
+    } else {
+      displayName = 'Неизвестно';
+    }
 
     const rankDisplay = msg.rankName || '[0] Пользователь';
     const color = msg.rankColor || '#808080';
