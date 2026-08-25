@@ -1,5 +1,5 @@
 const tg = window.Telegram.WebApp;
-const API_URL = 'https://www.fantastworld.ru:26312';
+const API_URL = 'https://fantastworld.ru:26312';
 
 let currentNick = '';
 let confirmTimer = null;
@@ -382,6 +382,7 @@ function renderTicket(ticket) {
   if (ticket.status === 'open') {
     document.getElementById('ticketReplyArea').style.display = 'block';
     document.getElementById('ticketCloseBtn').style.display = 'block';
+    document.getElementById('ticketCloseBtn').disabled = false;
   } else {
     document.getElementById('ticketReplyArea').style.display = 'none';
     document.getElementById('ticketCloseBtn').style.display = 'none';
@@ -429,6 +430,8 @@ document.getElementById('btnCloseTicket').addEventListener('click', async () => 
   if (!confirm('Закрыть тикет?')) return;
 
   try {
+    document.getElementById('btnCloseTicket').disabled = true;
+
     await api('/api/support/close', {
       method: 'POST',
       body: JSON.stringify({ ticketId: currentTicketId })
@@ -440,6 +443,8 @@ document.getElementById('btnCloseTicket').addEventListener('click', async () => 
     tg.HapticFeedback?.impactOccurred('success');
   } catch (e) {
     document.getElementById('ticketError').textContent = 'Ошибка при закрытии';
+  } finally {
+    document.getElementById('btnCloseTicket').disabled = false;
   }
 });
 
