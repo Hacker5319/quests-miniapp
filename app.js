@@ -28,6 +28,8 @@ function api(path, options = {}) {
 }
 
 async function init() {
+  document.title = 'BlazeQuest';
+  
   if (!tg || !tg.initDataUnsafe?.user) {
     show('screen-blocked');
     return;
@@ -290,23 +292,23 @@ async function loadTickets() {
     for (const ticket of tickets) {
       const div = document.createElement('div');
       div.className = 'ticket-item';
-      
+
       const statusClass = ticket.status === 'open' ? 'open' : 'closed';
       const statusText = ticket.status === 'open' ? '🟢 Открыт' : '🔴 Закрыт';
-      
+
       div.innerHTML = `
-        <div class="ticket-header" data-id="${ticket.id}">
+        <div class="ticket-header">
           <span class="ticket-id">#${ticket.id}</span>
           <span class="ticket-status ${statusClass}">${statusText}</span>
           <span class="ticket-nick">${ticket.nickname}</span>
         </div>
         <div class="ticket-preview">${ticket.lastMessage || 'Нет сообщений'}</div>
       `;
-      
-      div.querySelector('.ticket-header').addEventListener('click', () => {
+
+      div.addEventListener('click', () => {
         openTicket(ticket.id);
       });
-      
+
       container.appendChild(div);
     }
   } catch (e) {
@@ -330,30 +332,53 @@ async function openTicket(ticketId) {
 function renderTicket(ticket) {
   document.getElementById('ticketIdDisplay').textContent = `#${ticket.id}`;
   document.getElementById('ticketStatusDisplay').textContent = ticket.status === 'open' ? '🟢 Открыт' : '🔴 Закрыт';
-  
+
   const container = document.getElementById('ticketMessages');
   container.innerHTML = '';
-  
+
+  let lastSenderId = null;
+  let lastSenderType = null;
+
   for (const msg of ticket.messages) {
     const div = document.createElement('div');
-    div.className = `message ${msg.senderType === 'admin' ? 'admin' : 'user'}`;
+    const isUser = msg.senderType === 'user';
+    const isAdmin = msg.senderType === 'admin';
     
+    const isGroupStart = lastSenderId !== msg.senderId || lastSenderType !== msg.senderType;
+    
+    div.className = `message ${isUser ? 'user' : 'admin'}`;
+    if (isGroupStart) {
+      div.classList.add('group-start');
+    }
+
     const rank = msg.rank || 0;
     const rankName = ['[0] Пользователь', '[1] Игрок', '[2] Бывалый', '[3] Опытный', '[4] Элита', '[5] Ведущий', '[6] Главный'][rank] || '[0] Пользователь';
     const color = ['#808080', '#FFFFFF', '#55FF55', '#55FFFF', '#FFAA00', '#FF5555', '#FF00FF'][rank] || '#FFFFFF';
-    
+
+    const displayName = msg.nickname && msg.nickname !== 'null' && msg.nickname !== null
+      ? msg.nickname
+      : (msg.senderId ? `@${msg.senderId}` : 'Неизвестно');
+
+    const avatarLetter = displayName.charAt(0).toUpperCase();
+
     div.innerHTML = `
-      <div class="message-header">
-        <span class="message-sender" style="color:${color}">${rankName} ${msg.nickname}</span>
-        <span class="message-time">${new Date(msg.timestamp).toLocaleString()}</span>
-        ${msg.read ? '' : '<span class="message-unread">●</span>'}
+      <div class="message-avatar">${avatarLetter}</div>
+      <div class="message-body">
+        <div class="message-header">
+          <span class="message-sender" style="color:${color}">${rankName} ${displayName}</span>
+          <span class="message-time">${new Date(msg.timestamp).toLocaleString()}</span>
+          ${msg.read ? '' : '<span class="message-unread">●</span>'}
+        </div>
+        <div class="message-text">${msg.text}</div>
       </div>
-      <div class="message-text">${msg.text}</div>
     `;
-    
+
     container.appendChild(div);
+    
+    lastSenderId = msg.senderId;
+    lastSenderType = msg.senderType;
   }
-  
+
   if (ticket.status === 'open') {
     document.getElementById('ticketReplyArea').style.display = 'block';
     document.getElementById('ticketCloseBtn').style.display = 'block';
@@ -361,7 +386,7 @@ function renderTicket(ticket) {
     document.getElementById('ticketReplyArea').style.display = 'none';
     document.getElementById('ticketCloseBtn').style.display = 'none';
   }
-  
+
   if (isAdmin) {
     document.getElementById('ticketAdminActions').style.display = 'block';
   } else {
@@ -389,7 +414,8 @@ document.getElementById('btnSendTicketReply').addEventListener('click', async ()
     
     if (res.success) {
       document.getElementById('ticketReply').value = '';
-      openTicket(currentTicketId);
+      const ticket = await api(`/api/support/ticket/${currentTicketId}`);
+      renderTicket(ticket);
       tg.HapticFeedback?.impactOccurred('light');
     }
   } catch (e) {
@@ -401,16 +427,19 @@ document.getElementById('btnSendTicketReply').addEventListener('click', async ()
 
 document.getElementById('btnCloseTicket').addEventListener('click', async () => {
   if (!confirm('Закрыть тикет?')) return;
-  
+
   try {
     await api('/api/support/close', {
       method: 'POST',
       body: JSON.stringify({ ticketId: currentTicketId })
     });
-    openTicket(currentTicketId);
+
+    const ticket = await api(`/api/support/ticket/${currentTicketId}`);
+    renderTicket(ticket);
+
     tg.HapticFeedback?.impactOccurred('success');
   } catch (e) {
-    document.getElementById('ticketError').textContent = 'Ошибка';
+    document.getElementById('ticketError').textContent = 'Ошибка при закрытии';
   }
 });
 
@@ -420,7 +449,8 @@ document.getElementById('btnReopenTicket').addEventListener('click', async () =>
       method: 'POST',
       body: JSON.stringify({ ticketId: currentTicketId })
     });
-    openTicket(currentTicketId);
+    const ticket = await api(`/api/support/ticket/${currentTicketId}`);
+    renderTicket(ticket);
     tg.HapticFeedback?.impactOccurred('success');
   } catch (e) {
     document.getElementById('ticketError').textContent = 'Ошибка';
