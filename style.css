@@ -204,25 +204,37 @@ body {
 }
 
 .message {
-  padding: 10px 12px;
-  border-radius: 10px;
-  margin-bottom: 8px;
+  display: flex;
+  padding: 8px 12px;
+  margin-bottom: 4px;
 }
 
-.message.user {
-  background: rgba(0, 243, 255, 0.1);
-  border-left: 2px solid var(--neon);
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-right: 10px;
+  margin-top: 4px;
+  background: rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
 }
 
-.message.admin {
-  background: rgba(188, 19, 254, 0.1);
-  border-left: 2px solid var(--neon2);
+.message-body {
+  flex: 1;
+  min-width: 0;
 }
 
 .message-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 4px;
+  align-items: center;
+  margin-bottom: 2px;
 }
 
 .message-sender {
@@ -233,16 +245,59 @@ body {
 .message-time {
   color: var(--muted);
   font-size: 11px;
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .message-unread {
   color: var(--neon);
   font-size: 8px;
+  margin-left: 4px;
 }
 
 .message-text {
   font-size: 14px;
   word-wrap: break-word;
+  padding: 4px 0;
+}
+
+.message.user .message-avatar {
+  background: rgba(0, 243, 255, 0.2);
+  border: 1px solid rgba(0, 243, 255, 0.3);
+}
+
+.message.admin .message-avatar {
+  background: rgba(188, 19, 254, 0.2);
+  border: 1px solid rgba(188, 19, 254, 0.3);
+}
+
+.message.user .message-body {
+  border-left: 2px solid var(--neon);
+  padding-left: 10px;
+}
+
+.message.admin .message-body {
+  border-left: 2px solid var(--neon2);
+  padding-left: 10px;
+}
+
+.message.group-start .message-body {
+  border-left: 2px solid var(--neon);
+  padding-left: 10px;
+}
+
+.message.group-start.admin .message-body {
+  border-left: 2px solid var(--neon2);
+  padding-left: 10px;
+}
+
+.message:not(.group-start) .message-avatar {
+  visibility: hidden;
+}
+
+.message:not(.group-start) .message-body {
+  border-left: 2px solid transparent !important;
+  padding-left: 10px;
 }
 
 .ticket-status-bar {
