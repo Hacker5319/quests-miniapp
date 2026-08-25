@@ -351,21 +351,19 @@ function renderTicket(ticket) {
       div.classList.add('group-start');
     }
 
-    const rank = msg.rank || 0;
-    const rankName = ['[0] Пользователь', '[1] Игрок', '[2] Бывалый', '[3] Опытный', '[4] Элита', '[5] Ведущий', '[6] Главный'][rank] || '[0] Пользователь';
-    const color = ['#808080', '#FFFFFF', '#55FF55', '#55FFFF', '#FFAA00', '#FF5555', '#FF00FF'][rank] || '#FFFFFF';
-
     const displayName = msg.nickname && msg.nickname !== 'null' && msg.nickname !== null
       ? msg.nickname
       : (msg.senderId ? `@${msg.senderId}` : 'Неизвестно');
 
+    const rankDisplay = msg.rankName || '[0] Пользователь';
+    const color = msg.rankColor || '#808080';
     const avatarLetter = displayName.charAt(0).toUpperCase();
 
     div.innerHTML = `
       <div class="message-avatar">${avatarLetter}</div>
       <div class="message-body">
         <div class="message-header">
-          <span class="message-sender" style="color:${color}">${rankName} ${displayName}</span>
+          <span class="message-sender" style="color:${color}">${rankDisplay} ${displayName}</span>
           <span class="message-time">${new Date(msg.timestamp).toLocaleString()}</span>
           ${msg.read ? '' : '<span class="message-unread">●</span>'}
         </div>
@@ -379,13 +377,15 @@ function renderTicket(ticket) {
     lastSenderType = msg.senderType;
   }
 
-  if (ticket.status === 'open') {
-    document.getElementById('ticketReplyArea').style.display = 'block';
-    document.getElementById('ticketCloseBtn').style.display = 'block';
-    document.getElementById('ticketCloseBtn').disabled = false;
+  const isOpen = ticket.status === 'open';
+  document.getElementById('ticketReplyArea').style.display = isOpen ? 'block' : 'none';
+  document.getElementById('btnCloseTicket').style.display = isOpen ? 'block' : 'none';
+  document.getElementById('btnCloseTicket').disabled = !isOpen;
+  
+  if (ticket.status === 'closed') {
+    document.getElementById('btnReopenTicket').style.display = isAdmin ? 'block' : 'none';
   } else {
-    document.getElementById('ticketReplyArea').style.display = 'none';
-    document.getElementById('ticketCloseBtn').style.display = 'none';
+    document.getElementById('btnReopenTicket').style.display = 'none';
   }
 
   if (isAdmin) {
