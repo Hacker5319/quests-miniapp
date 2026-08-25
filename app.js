@@ -228,7 +228,12 @@ document.getElementById('btnSupport').addEventListener('click', () => {
 });
 
 document.getElementById('btnSupportBack').addEventListener('click', () => {
-  show('screen-profile');
+  const profile = document.getElementById('pNick').textContent;
+  if (profile && profile !== '—') {
+    show('screen-profile');
+  } else {
+    show('screen-register');
+  }
   updateSupportBadge();
 });
 
@@ -278,7 +283,7 @@ async function loadTickets() {
     container.innerHTML = '';
 
     if (tickets.length === 0) {
-      container.innerHTML = '<p class="hint">Нет тикетов</p>';
+      container.innerHTML = '<p class="hint">У вас ещё не было обращений</p>';
       return;
     }
 
