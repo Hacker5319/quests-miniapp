@@ -339,6 +339,9 @@ function renderTicket(ticket) {
   let lastSenderId = null;
   let lastSenderType = null;
 
+  const tgUser = tg.initDataUnsafe?.user;
+  const tgAvatarUrl = tgUser?.photo_url || null;
+
   for (const msg of ticket.messages) {
     const div = document.createElement('div');
     const isUser = msg.senderType === 'user';
@@ -353,24 +356,56 @@ function renderTicket(ticket) {
 
     const displayName = msg.nickname && msg.nickname !== 'null' && msg.nickname !== null
       ? msg.nickname
-      : (msg.senderId ? `@${msg.senderId}` : 'Неизвестно');
+      : (msg.telegramId ? `@${msg.telegramId}` : 'Неизвестно');
 
     const rankDisplay = msg.rankName || '[0] Пользователь';
     const color = msg.rankColor || '#808080';
-    const avatarLetter = displayName.charAt(0).toUpperCase();
 
-    div.innerHTML = `
-      <div class="message-avatar">${avatarLetter}</div>
-      <div class="message-body">
-        <div class="message-header">
-          <span class="message-sender" style="color:${color}">${rankDisplay} ${displayName}</span>
-          <span class="message-time">${new Date(msg.timestamp).toLocaleString()}</span>
-          ${msg.read ? '' : '<span class="message-unread">●</span>'}
-        </div>
-        <div class="message-text">${msg.text}</div>
-      </div>
-    `;
+    const avatarDiv = document.createElement('div');
+    avatarDiv.className = 'message-avatar';
+    
+    if (isUser && tgAvatarUrl && isGroupStart) {
+      const img = document.createElement('img');
+      img.src = tgAvatarUrl;
+      img.style.width = '36px';
+      img.style.height = '36px';
+      img.style.borderRadius = '50%';
+      img.style.objectFit = 'cover';
+      avatarDiv.appendChild(img);
+    } else if (isGroupStart) {
+      const avatarLetter = displayName.charAt(0).toUpperCase();
+      avatarDiv.textContent = avatarLetter;
+    } else {
+      avatarDiv.style.visibility = 'hidden';
+    }
 
+    const bodyDiv = document.createElement('div');
+    bodyDiv.className = 'message-body';
+    
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'message-header';
+    
+    const senderSpan = document.createElement('span');
+    senderSpan.className = 'message-sender';
+    senderSpan.style.color = color;
+    senderSpan.textContent = `${rankDisplay} ${displayName}`;
+    
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'message-time';
+    timeSpan.textContent = new Date(msg.timestamp).toLocaleString();
+    
+    headerDiv.appendChild(senderSpan);
+    headerDiv.appendChild(timeSpan);
+    
+    const textDiv = document.createElement('div');
+    textDiv.className = 'message-text';
+    textDiv.textContent = msg.text;
+    
+    bodyDiv.appendChild(headerDiv);
+    bodyDiv.appendChild(textDiv);
+    
+    div.appendChild(avatarDiv);
+    div.appendChild(bodyDiv);
     container.appendChild(div);
     
     lastSenderId = msg.senderId;
