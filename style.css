@@ -394,6 +394,88 @@ body {
   margin-bottom: 12px;
 }
 
+.bot-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.online {
+  background: var(--success);
+  box-shadow: 0 0 10px rgba(0, 255, 159, 0.5);
+}
+
+.status-dot.offline {
+  background: var(--danger);
+  box-shadow: 0 0 10px rgba(255, 46, 99, 0.5);
+}
+
+.admin-quests-section {
+  margin-top: 16px;
+}
+
+.admin-quest-add {
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 16px;
+}
+
+.admin-quests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.admin-quest-item {
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.admin-quest-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.admin-quest-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.admin-quest-description {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.admin-quest-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-quest-actions button {
+  margin-top: 0;
+}
+
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -418,7 +500,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 4px 20px;
+  padding: 4px 12px;
   cursor: pointer;
   transition: color 0.3s;
   position: relative;
@@ -464,7 +546,7 @@ body {
 @media (max-width: 420px) {
   .app { padding: 16px 12px 80px; }
   .neon-card { padding: 18px 14px; }
-  .tab-btn { padding: 4px 12px; }
+  .tab-btn { padding: 4px 8px; }
   .tab-btn .tab-label { font-size: 10px; }
   .tab-btn .tab-icon { font-size: 20px; }
 }
