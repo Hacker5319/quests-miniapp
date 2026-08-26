@@ -8,11 +8,22 @@ let isAdmin = false;
 let ticketPollTimer = null;
 let lastTicketUpdatedAt = null;
 let lastMessagesSignature = '';
+let currentUser = null;
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id !== 'screen-ticket') stopTicketPolling();
+  updateTabHighlight(id);
+}
+
+function updateTabHighlight(screenId) {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.screen === screenId) {
+      btn.classList.add('active');
+    }
+  });
 }
 
 function api(path, options = {}) {
@@ -55,11 +66,16 @@ async function init() {
 
   try {
     const data = await api('/api/profile');
+    currentUser = data;
     if (data.nickname) {
       renderProfile(data);
-      show('screen-profile');
+      show('screen-quests');
       isAdmin = data.rank >= 5;
-      await updateSupportBadge();
+      if (isAdmin) {
+        document.getElementById('tabAdmin').style.display = 'flex';
+      } else {
+        document.getElementById('tabAdmin').style.display = 'none';
+      }
     } else {
       document.getElementById('btnSupportFromReg').style.display = 'block';
       show('screen-register');
@@ -132,9 +148,15 @@ async function startRealname(nick) {
       show('screen-confirm');
     } else if (res.status === 'ok') {
       const profile = await api('/api/profile');
+      currentUser = profile;
       renderProfile(profile);
       isAdmin = profile.rank >= 5;
-      show('screen-profile');
+      if (isAdmin) {
+        document.getElementById('tabAdmin').style.display = 'flex';
+      } else {
+        document.getElementById('tabAdmin').style.display = 'none';
+      }
+      show('screen-quests');
     } else {
       document.getElementById('nickError').textContent = res.message || 'Ошибка';
       show('screen-register');
@@ -161,9 +183,15 @@ document.getElementById('btnConfirmNext').addEventListener('click', async () => 
       btn.disabled = false;
     } else if (res.status === 'ok') {
       const profile = await api('/api/profile');
+      currentUser = profile;
       renderProfile(profile);
       isAdmin = profile.rank >= 5;
-      show('screen-profile');
+      if (isAdmin) {
+        document.getElementById('tabAdmin').style.display = 'flex';
+      } else {
+        document.getElementById('tabAdmin').style.display = 'none';
+      }
+      show('screen-quests');
     } else {
       document.getElementById('confirmError').textContent = res.message || 'Ошибка';
       btn.disabled = false;
@@ -218,21 +246,15 @@ document.getElementById('btnSupportFromReg').addEventListener('click', () => {
 document.getElementById('btnRefresh').addEventListener('click', async () => {
   try {
     const data = await api('/api/profile');
+    currentUser = data;
     renderProfile(data);
     tg.HapticFeedback?.impactOccurred('light');
   } catch (e) {}
 });
 
-document.getElementById('btnSupport').addEventListener('click', () => {
+document.getElementById('btnSupportBack').addEventListener('click', () => {
   show('screen-support');
   loadTickets();
-});
-
-document.getElementById('btnSupportBack').addEventListener('click', () => {
-  const profile = document.getElementById('pNick').textContent;
-  if (profile && profile !== '—') show('screen-profile');
-  else show('screen-register');
-  updateSupportBadge();
 });
 
 document.getElementById('btnNewTicket').addEventListener('click', () => show('screen-new-ticket'));
@@ -431,7 +453,6 @@ document.getElementById('btnTicketBack').addEventListener('click', () => {
   stopTicketPolling();
   show('screen-support');
   loadTickets();
-  updateSupportBadge();
 });
 
 document.getElementById('btnSendTicketReply').addEventListener('click', async () => {
@@ -511,6 +532,54 @@ async function updateSupportBadge() {
     }
   } catch (e) {}
 }
+
+document.getElementById('tabQuests').addEventListener('click', () => {
+  show('screen-quests');
+});
+
+document.getElementById('tabSupport').addEventListener('click', () => {
+  show('screen-support');
+  loadTickets();
+  updateSupportBadge();
+});
+
+document.getElementById('tabAdmin').addEventListener('click', () => {
+  if (isAdmin) {
+    show('screen-admin');
+  }
+});
+
+document.getElementById('btnAdminTickets').addEventListener('click', () => {
+  show('screen-support');
+  loadTickets();
+  updateSupportBadge();
+});
+
+document.getElementById('btnAdminConsoleSend').addEventListener('click', async () => {
+  const input = document.getElementById('adminConsoleInput');
+  const text = input.value.trim();
+  if (!text) return;
+  
+  const btn = document.getElementById('btnAdminConsoleSend');
+  btn.disabled = true;
+  
+  try {
+    await api('/api/admin/console', {
+      method: 'POST',
+      body: JSON.stringify({ command: text })
+    });
+    input.value = '';
+    tg.HapticFeedback?.impactOccurred('success');
+  } catch (e) {
+    document.getElementById('adminConsoleError').textContent = 'Ошибка отправки';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('btnAdminBack').addEventListener('click', () => {
+  show('screen-quests');
+});
 
 setInterval(updateSupportBadge, 15000);
 init();
