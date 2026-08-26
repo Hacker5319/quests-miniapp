@@ -164,6 +164,14 @@ body {
   border-color: var(--neon);
 }
 
+.quest-item img {
+  width: 100%;
+  border-radius: 8px;
+  max-height: 150px;
+  object-fit: cover;
+  margin-bottom: 8px;
+}
+
 .quest-name {
   font-size: 17px;
   font-weight: 600;
@@ -245,6 +253,14 @@ body {
   white-space: pre-wrap;
 }
 
+#questDetailImage img {
+  width: 100%;
+  border-radius: 12px;
+  max-height: 300px;
+  object-fit: cover;
+  margin-bottom: 12px;
+}
+
 .quest-preview-name {
   font-size: 18px;
   font-weight: 600;
@@ -262,6 +278,14 @@ body {
   color: var(--muted);
   font-size: 14px;
   margin-top: 4px;
+}
+
+.quest-preview img {
+  width: 100%;
+  border-radius: 8px;
+  max-height: 150px;
+  object-fit: cover;
+  margin-bottom: 10px;
 }
 
 .tickets-list {
@@ -462,6 +486,14 @@ body {
   border: 1px solid rgba(255,255,255,0.08);
 }
 
+.admin-quest-item img {
+  width: 100%;
+  border-radius: 8px;
+  max-height: 150px;
+  object-fit: cover;
+  margin-bottom: 8px;
+}
+
 .admin-quest-header {
   display: flex;
   justify-content: space-between;
@@ -504,6 +536,13 @@ body {
 
 .image-preview {
   margin-bottom: 8px;
+}
+
+.image-preview img {
+  width: 100%;
+  border-radius: 8px;
+  max-height: 150px;
+  object-fit: cover;
 }
 
 .bot-status {
