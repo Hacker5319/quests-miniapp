@@ -1,5 +1,5 @@
 const tg = window.Telegram.WebApp;
-const API_URL = 'https://fantastworld.ru:26312';
+const API_URL = 'https://www.fantastworld.ru:26312';
 
 let currentNick = '';
 let confirmTimer = null;
@@ -16,7 +16,7 @@ function show(id) {
 }
 
 function api(path, options = {}) {
-  return fetch(`\( {API_URL} \){path}`, {
+  return fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
