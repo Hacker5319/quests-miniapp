@@ -9,6 +9,9 @@ let ticketPollTimer = null;
 let lastTicketUpdatedAt = null;
 let lastMessagesSignature = '';
 let currentUser = null;
+let currentEditQuestId = null;
+let currentQuestImage = null;
+let allTickets = false;
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -24,6 +27,13 @@ function updateTabHighlight(screenId) {
       btn.classList.add('active');
     }
   });
+}
+
+function showNav(show) {
+  const nav = document.querySelector('.bottom-nav');
+  if (nav) {
+    nav.style.display = show ? 'flex' : 'none';
+  }
 }
 
 function api(path, options = {}) {
@@ -49,6 +59,7 @@ function api(path, options = {}) {
 }
 
 async function init() {
+  showNav(false);
   if (confirmTimer) {
     clearInterval(confirmTimer);
     confirmTimer = null;
@@ -70,6 +81,7 @@ async function init() {
     if (data.nickname) {
       renderProfile(data);
       show('screen-profile');
+      showNav(true);
       isAdmin = data.rank >= 5;
       if (isAdmin) {
         document.getElementById('tabAdmin').style.display = 'flex';
@@ -151,6 +163,7 @@ async function startRealname(nick) {
       const profile = await api('/api/profile');
       currentUser = profile;
       renderProfile(profile);
+      showNav(true);
       isAdmin = profile.rank >= 5;
       if (isAdmin) {
         document.getElementById('tabAdmin').style.display = 'flex';
@@ -187,6 +200,7 @@ document.getElementById('btnConfirmNext').addEventListener('click', async () => 
       const profile = await api('/api/profile');
       currentUser = profile;
       renderProfile(profile);
+      showNav(true);
       isAdmin = profile.rank >= 5;
       if (isAdmin) {
         document.getElementById('tabAdmin').style.display = 'flex';
@@ -242,6 +256,7 @@ async function sendSupport(type) {
 
 document.getElementById('btnSupportFromReg').addEventListener('click', () => {
   currentNick = '';
+  allTickets = false;
   show('screen-support');
   loadTickets();
 });
@@ -256,7 +271,14 @@ document.getElementById('btnRefresh').addEventListener('click', async () => {
 });
 
 document.getElementById('btnNewTicket').addEventListener('click', () => show('screen-new-ticket'));
-document.getElementById('btnNewTicketBack').addEventListener('click', () => show('screen-support'));
+document.getElementById('btnNewTicketBack').addEventListener('click', () => {
+  if (allTickets) {
+    show('screen-admin-tickets');
+  } else {
+    show('screen-support');
+  }
+  loadTickets();
+});
 
 document.getElementById('btnSendTicket').addEventListener('click', async () => {
   const btn = document.getElementById('btnSendTicket');
@@ -276,7 +298,11 @@ document.getElementById('btnSendTicket').addEventListener('click', async () => {
     });
     if (res.success) {
       document.getElementById('ticketText').value = '';
-      show('screen-support');
+      if (allTickets) {
+        show('screen-admin-tickets');
+      } else {
+        show('screen-support');
+      }
       loadTickets();
       tg.HapticFeedback?.impactOccurred('success');
     } else {
@@ -318,6 +344,38 @@ async function loadTickets() {
     }
   } catch (e) {
     document.getElementById('ticketsList').innerHTML = '<p class="error-text">Ошибка загрузки</p>';
+  }
+}
+
+async function loadAllTickets() {
+  try {
+    const tickets = await api('/api/support/all');
+    const container = document.getElementById('adminTicketsList');
+    container.innerHTML = '';
+    if (!tickets.length) {
+      container.innerHTML = '<p class="hint">Нет тикетов</p>';
+      return;
+    }
+    for (const ticket of tickets) {
+      const div = document.createElement('div');
+      div.className = 'ticket-item';
+      const statusClass = ticket.status === 'open' ? 'open' : 'closed';
+      const statusText = ticket.status === 'open' ? '🟢 Открыт' : '🔴 Закрыт';
+      const unreadMark = ticket.unread > 0 ? `<span class="badge">${ticket.unread}</span>` : '';
+      div.innerHTML = `
+        <div class="ticket-header">
+          <span class="ticket-id">#${ticket.id}</span>
+          <span class="ticket-status ${statusClass}">${statusText}</span>
+          <span class="ticket-nick">${ticket.nickname || ''}</span>
+          ${unreadMark}
+        </div>
+        <div class="ticket-preview">${ticket.lastMessage || 'Нет сообщений'}</div>
+      `;
+      div.addEventListener('click', () => openTicket(ticket.id));
+      container.appendChild(div);
+    }
+  } catch (e) {
+    document.getElementById('adminTicketsList').innerHTML = '<p class="error-text">Ошибка загрузки</p>';
   }
 }
 
@@ -449,7 +507,11 @@ function stopTicketPolling() {
 
 document.getElementById('btnTicketBack').addEventListener('click', () => {
   stopTicketPolling();
-  show('screen-support');
+  if (allTickets) {
+    show('screen-admin-tickets');
+  } else {
+    show('screen-support');
+  }
   loadTickets();
 });
 
@@ -541,6 +603,7 @@ document.getElementById('tabQuests').addEventListener('click', () => {
 });
 
 document.getElementById('tabSupport').addEventListener('click', () => {
+  allTickets = false;
   show('screen-support');
   loadTickets();
   updateSupportBadge();
@@ -549,14 +612,34 @@ document.getElementById('tabSupport').addEventListener('click', () => {
 document.getElementById('tabAdmin').addEventListener('click', () => {
   if (isAdmin) {
     show('screen-admin');
-    loadAdminQuests();
   }
 });
 
 document.getElementById('btnAdminTickets').addEventListener('click', () => {
-  show('screen-support');
-  loadTickets();
-  updateSupportBadge();
+  allTickets = true;
+  show('screen-admin-tickets');
+  loadAllTickets();
+});
+
+document.getElementById('btnAdminQuests').addEventListener('click', () => {
+  show('screen-admin-quests');
+  loadAdminQuests();
+});
+
+document.getElementById('btnAdminConsole').addEventListener('click', () => {
+  show('screen-admin-console');
+});
+
+document.getElementById('btnAdminConsoleBack').addEventListener('click', () => {
+  show('screen-admin');
+});
+
+document.getElementById('btnAdminTicketsBack').addEventListener('click', () => {
+  show('screen-admin');
+});
+
+document.getElementById('btnAdminQuestsBack').addEventListener('click', () => {
+  show('screen-admin');
 });
 
 document.getElementById('btnAdminConsoleSend').addEventListener('click', async () => {
@@ -592,39 +675,141 @@ document.getElementById('btnAdminConsoleSend').addEventListener('click', async (
   }
 });
 
-document.getElementById('btnAdminBack').addEventListener('click', () => {
-  show('screen-profile');
+document.getElementById('btnAdminQuestNew').addEventListener('click', () => {
+  currentEditQuestId = null;
+  currentQuestImage = null;
+  document.getElementById('adminQuestFormTitle').textContent = 'Новый квест';
+  document.getElementById('adminQuestName').value = '';
+  document.getElementById('adminQuestDescription').value = '';
+  document.getElementById('adminQuestGenre').value = '';
+  document.getElementById('adminQuestRules').value = '';
+  document.getElementById('adminQuestBooking').checked = false;
+  document.getElementById('adminQuestImagePreview').style.display = 'none';
+  document.getElementById('adminQuestImageInput').value = '';
+  document.getElementById('adminQuestCustomTags').value = '';
+  document.getElementById('adminQuestError').textContent = '';
+  document.getElementById('adminQuestPreview').style.display = 'none';
+  show('screen-admin-quest-form');
 });
 
-document.getElementById('btnAdminQuestAdd').addEventListener('click', async () => {
+document.getElementById('btnAdminQuestFormBack').addEventListener('click', () => {
+  show('screen-admin-quests');
+  loadAdminQuests();
+});
+
+document.getElementById('btnSelectQuestImage').addEventListener('click', () => {
+  document.getElementById('adminQuestImageInput').click();
+});
+
+document.getElementById('adminQuestImageInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const base64 = event.target.result;
+    currentQuestImage = base64;
+    const preview = document.getElementById('adminQuestImagePreview');
+    const img = document.getElementById('adminQuestImagePreviewImg');
+    img.src = base64;
+    preview.style.display = 'block';
+    updateQuestPreview();
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('btnRemoveQuestImage').addEventListener('click', () => {
+  currentQuestImage = null;
+  document.getElementById('adminQuestImagePreview').style.display = 'none';
+  document.getElementById('adminQuestImageInput').value = '';
+  updateQuestPreview();
+});
+
+document.getElementById('adminQuestName').addEventListener('input', updateQuestPreview);
+document.getElementById('adminQuestDescription').addEventListener('input', updateQuestPreview);
+document.getElementById('adminQuestGenre').addEventListener('input', updateQuestPreview);
+document.getElementById('adminQuestRules').addEventListener('input', updateQuestPreview);
+document.getElementById('adminQuestBooking').addEventListener('change', updateQuestPreview);
+document.getElementById('adminQuestCustomTags').addEventListener('input', updateQuestPreview);
+
+function updateQuestPreview() {
+  const name = document.getElementById('adminQuestName').value.trim() || 'Название квеста';
+  const description = document.getElementById('adminQuestDescription').value.trim() || 'Описание квеста';
+  const genre = document.getElementById('adminQuestGenre').value.trim();
+  const booking = document.getElementById('adminQuestBooking').checked;
+  const customTags = document.getElementById('adminQuestCustomTags').value.trim();
+  
+  const preview = document.getElementById('adminQuestPreview');
+  const previewContent = document.getElementById('adminQuestPreviewContent');
+  
+  let tags = '';
+  if (genre) tags += `<span class="quest-tag">${genre}</span>`;
+  if (booking) tags += `<span class="quest-tag booking">🔒 Бронь</span>`;
+  if (customTags) {
+    customTags.split(',').forEach(t => {
+      const parts = t.trim().split(':');
+      const tagName = parts[0].trim();
+      const tagColor = parts[1] ? parts[1].trim() : '#7a8ba0';
+      if (tagName) {
+        tags += `<span class="quest-tag" style="background:${tagColor}20;color:${tagColor};">${tagName}</span>`;
+      }
+    });
+  }
+  
+  const imageHtml = currentQuestImage ? `<img src="${currentQuestImage}" style="max-width:100%;border-radius:8px;max-height:150px;margin-bottom:10px;">` : '';
+  
+  previewContent.innerHTML = `
+    ${imageHtml}
+    <div class="quest-preview-name">${name}</div>
+    <div class="quest-preview-tags">${tags}</div>
+    <div class="quest-preview-description">${description}</div>
+  `;
+  preview.style.display = 'block';
+}
+
+document.getElementById('btnAdminQuestFormSave').addEventListener('click', async () => {
   const name = document.getElementById('adminQuestName').value.trim();
   const description = document.getElementById('adminQuestDescription').value.trim();
-  const active = document.getElementById('adminQuestActive').checked;
+  const genre = document.getElementById('adminQuestGenre').value.trim();
+  const rules = document.getElementById('adminQuestRules').value.trim();
+  const booking = document.getElementById('adminQuestBooking').checked;
+  const customTags = document.getElementById('adminQuestCustomTags').value.trim();
   
   if (!name) {
     document.getElementById('adminQuestError').textContent = 'Введите название квеста';
     return;
   }
   
-  const btn = document.getElementById('btnAdminQuestAdd');
+  const btn = document.getElementById('btnAdminQuestFormSave');
   btn.disabled = true;
   document.getElementById('adminQuestError').textContent = '';
   
   try {
-    const response = await api('/api/admin/quests', {
-      method: 'POST',
-      body: JSON.stringify({ name, description, active })
-    });
-    if (response.success) {
-      document.getElementById('adminQuestName').value = '';
-      document.getElementById('adminQuestDescription').value = '';
-      document.getElementById('adminQuestActive').checked = true;
-      loadAdminQuests();
-      loadQuests();
-      tg.HapticFeedback?.impactOccurred('success');
+    let questId = currentEditQuestId;
+    if (!questId) {
+      const response = await api('/api/admin/quests', {
+        method: 'POST',
+        body: JSON.stringify({ name, description, genre, rules, booking, customTags, active: false })
+      });
+      questId = response.id;
     } else {
-      document.getElementById('adminQuestError').textContent = response.error || 'Ошибка';
+      await api(`/api/admin/quests/${questId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ name, description, genre, rules, booking, customTags, active: false })
+      });
     }
+    
+    if (currentQuestImage) {
+      await api('/api/admin/quests/image', {
+        method: 'POST',
+        body: JSON.stringify({ questId, image: currentQuestImage })
+      });
+    }
+    
+    show('screen-admin-quests');
+    loadAdminQuests();
+    loadQuests();
+    tg.HapticFeedback?.impactOccurred('success');
   } catch (e) {
     document.getElementById('adminQuestError').textContent = 'Ошибка сервера';
   } finally {
@@ -644,12 +829,31 @@ async function loadQuests() {
     for (const quest of quests) {
       const div = document.createElement('div');
       div.className = 'quest-item';
-      const statusClass = quest.active ? 'active' : 'inactive';
-      const statusText = quest.active ? '🟢 Доступен' : '🔴 Недоступен';
+      div.addEventListener('click', () => showQuestDetail(quest));
+      
+      let tags = '';
+      if (quest.genre) tags += `<span class="quest-tag">${quest.genre}</span>`;
+      if (quest.booking) tags += `<span class="quest-tag booking">🔒 Бронь</span>`;
+      if (quest.custom_tags) {
+        const customTags = quest.custom_tags.split(',');
+        customTags.forEach(t => {
+          const parts = t.trim().split(':');
+          const tagName = parts[0].trim();
+          const tagColor = parts[1] ? parts[1].trim() : '#7a8ba0';
+          if (tagName) {
+            tags += `<span class="quest-tag" style="background:${tagColor}20;color:${tagColor};">${tagName}</span>`;
+          }
+        });
+      }
+      
+      const imageHtml = quest.image_url ? `<img src="${quest.image_url}" style="max-width:100%;border-radius:8px;max-height:120px;margin-bottom:8px;">` : '';
+      
       div.innerHTML = `
+        ${imageHtml}
         <div class="quest-name">${quest.name}</div>
+        <div class="quest-tags">${tags}</div>
         <div class="quest-description">${quest.description || 'Нет описания'}</div>
-        <span class="quest-status ${statusClass}">${statusText}</span>
+        <span class="quest-status ${quest.active ? 'active' : 'inactive'}">${quest.active ? '🟢 Доступен' : '🔴 Недоступен'}</span>
       `;
       container.appendChild(div);
     }
@@ -657,6 +861,48 @@ async function loadQuests() {
     document.getElementById('questsList').innerHTML = '<p class="error-text">Ошибка загрузки квестов</p>';
   }
 }
+
+function showQuestDetail(quest) {
+  document.getElementById('questDetailName').textContent = quest.name;
+  
+  let tags = '';
+  if (quest.genre) tags += `<span class="quest-tag">${quest.genre}</span>`;
+  if (quest.booking) tags += `<span class="quest-tag booking">🔒 Бронь</span>`;
+  if (quest.custom_tags) {
+    const customTags = quest.custom_tags.split(',');
+    customTags.forEach(t => {
+      const parts = t.trim().split(':');
+      const tagName = parts[0].trim();
+      const tagColor = parts[1] ? parts[1].trim() : '#7a8ba0';
+      if (tagName) {
+        tags += `<span class="quest-tag" style="background:${tagColor}20;color:${tagColor};">${tagName}</span>`;
+      }
+    });
+  }
+  document.getElementById('questDetailTags').innerHTML = tags;
+  
+  const imageHtml = quest.image_url ? `<img src="${quest.image_url}" style="max-width:100%;border-radius:8px;max-height:200px;">` : '';
+  document.getElementById('questDetailImage').innerHTML = imageHtml;
+  
+  document.getElementById('questDetailDescription').textContent = quest.description || 'Нет описания';
+  document.getElementById('questDetailRules').textContent = quest.rules || 'Нет правил';
+  document.getElementById('questDetailStatus').textContent = quest.active ? '🟢 Доступен' : '🔴 Недоступен';
+  document.getElementById('questDetailStatus').className = `quest-status ${quest.active ? 'active' : 'inactive'}`;
+  
+  document.getElementById('questDetailPlay').style.display = quest.active ? 'block' : 'none';
+  
+  show('screen-quest-detail');
+}
+
+document.getElementById('btnQuestDetailBack').addEventListener('click', () => {
+  show('screen-quests');
+  loadQuests();
+});
+
+document.getElementById('btnQuestDetailPlay').addEventListener('click', () => {
+  tg.HapticFeedback?.impactOccurred('light');
+  alert('Функция бронирования будет добавлена позже');
+});
 
 async function loadAdminQuests() {
   try {
@@ -670,16 +916,35 @@ async function loadAdminQuests() {
     for (const quest of quests) {
       const div = document.createElement('div');
       div.className = 'admin-quest-item';
-      const statusClass = quest.active ? 'active' : 'inactive';
-      const statusText = quest.active ? '✅ Активен' : '❌ Неактивен';
+      
+      let tags = '';
+      if (quest.genre) tags += `<span class="quest-tag">${quest.genre}</span>`;
+      if (quest.booking) tags += `<span class="quest-tag booking">🔒 Бронь</span>`;
+      if (quest.custom_tags) {
+        const customTags = quest.custom_tags.split(',');
+        customTags.forEach(t => {
+          const parts = t.trim().split(':');
+          const tagName = parts[0].trim();
+          const tagColor = parts[1] ? parts[1].trim() : '#7a8ba0';
+          if (tagName) {
+            tags += `<span class="quest-tag" style="background:${tagColor}20;color:${tagColor};">${tagName}</span>`;
+          }
+        });
+      }
+      
+      const imageHtml = quest.image_url ? `<img src="${quest.image_url}" style="max-width:100%;border-radius:8px;max-height:80px;margin-bottom:8px;">` : '';
+      
       div.innerHTML = `
+        ${imageHtml}
         <div class="admin-quest-header">
           <span class="admin-quest-name">${quest.name}</span>
-          <span class="quest-status ${statusClass}">${statusText}</span>
+          <span class="quest-status ${quest.active ? 'active' : 'inactive'}">${quest.active ? '✅ Активен' : '❌ Неактивен'}</span>
         </div>
+        <div class="admin-quest-tags">${tags}</div>
         <div class="admin-quest-description">${quest.description || 'Нет описания'}</div>
         <div class="admin-quest-actions">
           <button class="neon-btn secondary admin-quest-edit" data-id="${quest.id}" style="flex:1;margin-top:4px;">✏️ Изменить</button>
+          <button class="neon-btn admin-quest-toggle" data-id="${quest.id}" style="flex:1;margin-top:4px;background:${quest.active ? 'var(--danger)' : 'var(--success)'};">${quest.active ? '🔴 Отключить' : '🟢 Включить'}</button>
           <button class="neon-btn admin-quest-delete" data-id="${quest.id}" style="flex:1;margin-top:4px;background:var(--danger);">🗑️ Удалить</button>
         </div>
       `;
@@ -705,66 +970,70 @@ async function loadAdminQuests() {
       });
     });
     
-    document.querySelectorAll('.admin-quest-edit').forEach(btn => {
-      btn.addEventListener('click', () => {
+    document.querySelectorAll('.admin-quest-toggle').forEach(btn => {
+      btn.addEventListener('click', async () => {
         const id = parseInt(btn.dataset.id);
-        const item = btn.closest('.admin-quest-item');
-        const name = item.querySelector('.admin-quest-name').textContent;
-        const description = item.querySelector('.admin-quest-description').textContent;
-        const isActive = item.querySelector('.quest-status').textContent.includes('Активен');
-        
-        document.getElementById('adminEditQuestId').value = id;
-        document.getElementById('adminEditQuestName').value = name;
-        document.getElementById('adminEditQuestDescription').value = description === 'Нет описания' ? '' : description;
-        document.getElementById('adminEditQuestActive').checked = isActive;
-        document.getElementById('adminEditSection').style.display = 'block';
-        document.getElementById('adminEditSection').scrollIntoView({ behavior: 'smooth' });
+        try {
+          const quest = await api(`/api/quests/${id}`);
+          const newActive = !quest.active;
+          await api(`/api/admin/quests/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ 
+              name: quest.name,
+              description: quest.description || '',
+              genre: quest.genre || '',
+              rules: quest.rules || '',
+              booking: !!quest.booking,
+              customTags: quest.custom_tags || '',
+              active: newActive
+            })
+          });
+          loadAdminQuests();
+          loadQuests();
+          tg.HapticFeedback?.impactOccurred('success');
+        } catch (e) {
+          document.getElementById('adminQuestError').textContent = 'Ошибка изменения статуса';
+        }
+      });
+    });
+    
+    document.querySelectorAll('.admin-quest-edit').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = parseInt(btn.dataset.id);
+        try {
+          const quest = await api(`/api/quests/${id}`);
+          currentEditQuestId = id;
+          document.getElementById('adminQuestFormTitle').textContent = 'Редактировать квест';
+          document.getElementById('adminQuestName').value = quest.name;
+          document.getElementById('adminQuestDescription').value = quest.description || '';
+          document.getElementById('adminQuestGenre').value = quest.genre || '';
+          document.getElementById('adminQuestRules').value = quest.rules || '';
+          document.getElementById('adminQuestBooking').checked = !!quest.booking;
+          document.getElementById('adminQuestCustomTags').value = quest.custom_tags || '';
+          document.getElementById('adminQuestError').textContent = '';
+          
+          if (quest.image_url) {
+            const preview = document.getElementById('adminQuestImagePreview');
+            const img = document.getElementById('adminQuestImagePreviewImg');
+            img.src = quest.image_url;
+            preview.style.display = 'block';
+            currentQuestImage = quest.image_url;
+          } else {
+            document.getElementById('adminQuestImagePreview').style.display = 'none';
+            currentQuestImage = null;
+          }
+          
+          updateQuestPreview();
+          show('screen-admin-quest-form');
+        } catch (e) {
+          document.getElementById('adminQuestError').textContent = 'Ошибка загрузки квеста';
+        }
       });
     });
   } catch (e) {
     document.getElementById('adminQuestsList').innerHTML = '<p class="error-text">Ошибка загрузки</p>';
   }
 }
-
-document.getElementById('btnAdminQuestEditCancel').addEventListener('click', () => {
-  document.getElementById('adminEditSection').style.display = 'none';
-  document.getElementById('adminEditQuestError').textContent = '';
-});
-
-document.getElementById('btnAdminQuestEditSave').addEventListener('click', async () => {
-  const id = parseInt(document.getElementById('adminEditQuestId').value);
-  const name = document.getElementById('adminEditQuestName').value.trim();
-  const description = document.getElementById('adminEditQuestDescription').value.trim();
-  const active = document.getElementById('adminEditQuestActive').checked;
-  
-  if (!name) {
-    document.getElementById('adminEditQuestError').textContent = 'Введите название квеста';
-    return;
-  }
-  
-  const btn = document.getElementById('btnAdminQuestEditSave');
-  btn.disabled = true;
-  document.getElementById('adminEditQuestError').textContent = '';
-  
-  try {
-    const response = await api(`/api/admin/quests/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ name, description, active })
-    });
-    if (response.success) {
-      document.getElementById('adminEditSection').style.display = 'none';
-      loadAdminQuests();
-      loadQuests();
-      tg.HapticFeedback?.impactOccurred('success');
-    } else {
-      document.getElementById('adminEditQuestError').textContent = response.error || 'Ошибка';
-    }
-  } catch (e) {
-    document.getElementById('adminEditQuestError').textContent = 'Ошибка сервера';
-  } finally {
-    btn.disabled = false;
-  }
-});
 
 async function updateBotStatus() {
   try {
