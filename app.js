@@ -69,13 +69,14 @@ async function init() {
     currentUser = data;
     if (data.nickname) {
       renderProfile(data);
-      show('screen-quests');
+      show('screen-profile');
       isAdmin = data.rank >= 5;
       if (isAdmin) {
         document.getElementById('tabAdmin').style.display = 'flex';
       } else {
         document.getElementById('tabAdmin').style.display = 'none';
       }
+      loadQuests();
     } else {
       document.getElementById('btnSupportFromReg').style.display = 'block';
       show('screen-register');
@@ -156,7 +157,8 @@ async function startRealname(nick) {
       } else {
         document.getElementById('tabAdmin').style.display = 'none';
       }
-      show('screen-quests');
+      show('screen-profile');
+      loadQuests();
     } else {
       document.getElementById('nickError').textContent = res.message || 'Ошибка';
       show('screen-register');
@@ -191,7 +193,8 @@ document.getElementById('btnConfirmNext').addEventListener('click', async () => 
       } else {
         document.getElementById('tabAdmin').style.display = 'none';
       }
-      show('screen-quests');
+      show('screen-profile');
+      loadQuests();
     } else {
       document.getElementById('confirmError').textContent = res.message || 'Ошибка';
       btn.disabled = false;
@@ -528,8 +531,13 @@ async function updateSupportBadge() {
   } catch (e) {}
 }
 
+document.getElementById('tabProfile').addEventListener('click', () => {
+  show('screen-profile');
+});
+
 document.getElementById('tabQuests').addEventListener('click', () => {
   show('screen-quests');
+  loadQuests();
 });
 
 document.getElementById('tabSupport').addEventListener('click', () => {
@@ -541,6 +549,7 @@ document.getElementById('tabSupport').addEventListener('click', () => {
 document.getElementById('tabAdmin').addEventListener('click', () => {
   if (isAdmin) {
     show('screen-admin');
+    loadAdminQuests();
   }
 });
 
@@ -557,14 +566,25 @@ document.getElementById('btnAdminConsoleSend').addEventListener('click', async (
   
   const btn = document.getElementById('btnAdminConsoleSend');
   btn.disabled = true;
+  document.getElementById('adminConsoleError').textContent = '';
   
   try {
-    await api('/api/admin/console', {
+    const response = await api('/api/admin/console', {
       method: 'POST',
       body: JSON.stringify({ command: text })
     });
-    input.value = '';
-    tg.HapticFeedback?.impactOccurred('success');
+    if (response.success) {
+      input.value = '';
+      tg.HapticFeedback?.impactOccurred('success');
+      document.getElementById('adminConsoleError').style.color = 'var(--success)';
+      document.getElementById('adminConsoleError').textContent = '✅ Команда отправлена';
+      setTimeout(() => {
+        document.getElementById('adminConsoleError').textContent = '';
+        document.getElementById('adminConsoleError').style.color = 'var(--danger)';
+      }, 2000);
+    } else {
+      document.getElementById('adminConsoleError').textContent = response.error || 'Ошибка отправки';
+    }
   } catch (e) {
     document.getElementById('adminConsoleError').textContent = 'Ошибка отправки';
   } finally {
@@ -573,8 +593,196 @@ document.getElementById('btnAdminConsoleSend').addEventListener('click', async (
 });
 
 document.getElementById('btnAdminBack').addEventListener('click', () => {
-  show('screen-quests');
+  show('screen-profile');
 });
 
+document.getElementById('btnAdminQuestAdd').addEventListener('click', async () => {
+  const name = document.getElementById('adminQuestName').value.trim();
+  const description = document.getElementById('adminQuestDescription').value.trim();
+  const active = document.getElementById('adminQuestActive').checked;
+  
+  if (!name) {
+    document.getElementById('adminQuestError').textContent = 'Введите название квеста';
+    return;
+  }
+  
+  const btn = document.getElementById('btnAdminQuestAdd');
+  btn.disabled = true;
+  document.getElementById('adminQuestError').textContent = '';
+  
+  try {
+    const response = await api('/api/admin/quests', {
+      method: 'POST',
+      body: JSON.stringify({ name, description, active })
+    });
+    if (response.success) {
+      document.getElementById('adminQuestName').value = '';
+      document.getElementById('adminQuestDescription').value = '';
+      document.getElementById('adminQuestActive').checked = true;
+      loadAdminQuests();
+      loadQuests();
+      tg.HapticFeedback?.impactOccurred('success');
+    } else {
+      document.getElementById('adminQuestError').textContent = response.error || 'Ошибка';
+    }
+  } catch (e) {
+    document.getElementById('adminQuestError').textContent = 'Ошибка сервера';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+async function loadQuests() {
+  try {
+    const quests = await api('/api/quests');
+    const container = document.getElementById('questsList');
+    container.innerHTML = '';
+    if (!quests.length) {
+      container.innerHTML = '<p class="hint">Квестов пока нет</p>';
+      return;
+    }
+    for (const quest of quests) {
+      const div = document.createElement('div');
+      div.className = 'quest-item';
+      const statusClass = quest.active ? 'active' : 'inactive';
+      const statusText = quest.active ? '🟢 Доступен' : '🔴 Недоступен';
+      div.innerHTML = `
+        <div class="quest-name">${quest.name}</div>
+        <div class="quest-description">${quest.description || 'Нет описания'}</div>
+        <span class="quest-status ${statusClass}">${statusText}</span>
+      `;
+      container.appendChild(div);
+    }
+  } catch (e) {
+    document.getElementById('questsList').innerHTML = '<p class="error-text">Ошибка загрузки квестов</p>';
+  }
+}
+
+async function loadAdminQuests() {
+  try {
+    const quests = await api('/api/quests');
+    const container = document.getElementById('adminQuestsList');
+    container.innerHTML = '';
+    if (!quests.length) {
+      container.innerHTML = '<p class="hint">Квестов нет</p>';
+      return;
+    }
+    for (const quest of quests) {
+      const div = document.createElement('div');
+      div.className = 'admin-quest-item';
+      const statusClass = quest.active ? 'active' : 'inactive';
+      const statusText = quest.active ? '✅ Активен' : '❌ Неактивен';
+      div.innerHTML = `
+        <div class="admin-quest-header">
+          <span class="admin-quest-name">${quest.name}</span>
+          <span class="quest-status ${statusClass}">${statusText}</span>
+        </div>
+        <div class="admin-quest-description">${quest.description || 'Нет описания'}</div>
+        <div class="admin-quest-actions">
+          <button class="neon-btn secondary admin-quest-edit" data-id="${quest.id}" style="flex:1;margin-top:4px;">✏️ Изменить</button>
+          <button class="neon-btn admin-quest-delete" data-id="${quest.id}" style="flex:1;margin-top:4px;background:var(--danger);">🗑️ Удалить</button>
+        </div>
+      `;
+      container.appendChild(div);
+    }
+    
+    document.querySelectorAll('.admin-quest-delete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = parseInt(btn.dataset.id);
+        if (!confirm('Удалить квест?')) return;
+        try {
+          const response = await api(`/api/admin/quests/${id}`, {
+            method: 'DELETE'
+          });
+          if (response.success) {
+            loadAdminQuests();
+            loadQuests();
+            tg.HapticFeedback?.impactOccurred('success');
+          }
+        } catch (e) {
+          document.getElementById('adminQuestError').textContent = 'Ошибка удаления';
+        }
+      });
+    });
+    
+    document.querySelectorAll('.admin-quest-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        const item = btn.closest('.admin-quest-item');
+        const name = item.querySelector('.admin-quest-name').textContent;
+        const description = item.querySelector('.admin-quest-description').textContent;
+        const isActive = item.querySelector('.quest-status').textContent.includes('Активен');
+        
+        document.getElementById('adminEditQuestId').value = id;
+        document.getElementById('adminEditQuestName').value = name;
+        document.getElementById('adminEditQuestDescription').value = description === 'Нет описания' ? '' : description;
+        document.getElementById('adminEditQuestActive').checked = isActive;
+        document.getElementById('adminEditSection').style.display = 'block';
+        document.getElementById('adminEditSection').scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+  } catch (e) {
+    document.getElementById('adminQuestsList').innerHTML = '<p class="error-text">Ошибка загрузки</p>';
+  }
+}
+
+document.getElementById('btnAdminQuestEditCancel').addEventListener('click', () => {
+  document.getElementById('adminEditSection').style.display = 'none';
+  document.getElementById('adminEditQuestError').textContent = '';
+});
+
+document.getElementById('btnAdminQuestEditSave').addEventListener('click', async () => {
+  const id = parseInt(document.getElementById('adminEditQuestId').value);
+  const name = document.getElementById('adminEditQuestName').value.trim();
+  const description = document.getElementById('adminEditQuestDescription').value.trim();
+  const active = document.getElementById('adminEditQuestActive').checked;
+  
+  if (!name) {
+    document.getElementById('adminEditQuestError').textContent = 'Введите название квеста';
+    return;
+  }
+  
+  const btn = document.getElementById('btnAdminQuestEditSave');
+  btn.disabled = true;
+  document.getElementById('adminEditQuestError').textContent = '';
+  
+  try {
+    const response = await api(`/api/admin/quests/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name, description, active })
+    });
+    if (response.success) {
+      document.getElementById('adminEditSection').style.display = 'none';
+      loadAdminQuests();
+      loadQuests();
+      tg.HapticFeedback?.impactOccurred('success');
+    } else {
+      document.getElementById('adminEditQuestError').textContent = response.error || 'Ошибка';
+    }
+  } catch (e) {
+    document.getElementById('adminEditQuestError').textContent = 'Ошибка сервера';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+async function updateBotStatus() {
+  try {
+    const status = await api('/api/admin/status');
+    const dot = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    if (dot && text) {
+      if (status.connected) {
+        dot.className = 'status-dot online';
+        text.textContent = 'Бот подключен';
+      } else {
+        dot.className = 'status-dot offline';
+        text.textContent = 'Бот отключен';
+      }
+    }
+  } catch (e) {}
+}
+
 setInterval(updateSupportBadge, 15000);
+setInterval(updateBotStatus, 10000);
 init();
