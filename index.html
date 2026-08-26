@@ -89,6 +89,28 @@
       </div>
     </div>
 
+    <div id="screen-quest-detail" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title" id="questDetailName"></h2>
+        <div id="questDetailImage"></div>
+        <div id="questDetailTags" class="quest-detail-tags"></div>
+        <div class="quest-detail-section">
+          <span class="quest-detail-label">Описание</span>
+          <p id="questDetailDescription"></p>
+        </div>
+        <div class="quest-detail-section">
+          <span class="quest-detail-label">Правила</span>
+          <p id="questDetailRules"></p>
+        </div>
+        <div class="quest-detail-section">
+          <span class="quest-detail-label">Статус</span>
+          <span id="questDetailStatus"></span>
+        </div>
+        <button id="btnQuestDetailPlay" class="neon-btn">🎮 Играть</button>
+        <button id="btnQuestDetailBack" class="neon-btn secondary">Назад</button>
+      </div>
+    </div>
+
     <div id="screen-support" class="screen">
       <div class="neon-card">
         <h2 class="neon-title">Помощь</h2>
@@ -132,57 +154,81 @@
     <div id="screen-admin" class="screen">
       <div class="neon-card">
         <h2 class="neon-title">Администрирование</h2>
+        <button id="btnAdminTickets" class="neon-btn">🎫 Тикеты</button>
+        <button id="btnAdminQuests" class="neon-btn">📋 Квесты</button>
+        <button id="btnAdminConsole" class="neon-btn">💻 Консоль</button>
+      </div>
+    </div>
+
+    <div id="screen-admin-tickets" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Все тикеты</h2>
+        <button id="btnNewTicket" class="neon-btn">Создать тикет</button>
+        <div id="adminTicketsList" class="tickets-list"></div>
+        <button id="btnAdminTicketsBack" class="neon-btn secondary">Назад</button>
+        <div id="supportError" class="error-text"></div>
+      </div>
+    </div>
+
+    <div id="screen-admin-quests" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Управление квестами</h2>
+        <button id="btnAdminQuestNew" class="neon-btn" style="background:var(--success);">➕ Новый квест</button>
+        <div id="adminQuestsList" class="admin-quests-list"></div>
+        <button id="btnAdminQuestsBack" class="neon-btn secondary">Назад</button>
+        <div id="adminQuestError" class="error-text"></div>
+      </div>
+    </div>
+
+    <div id="screen-admin-quest-form" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title" id="adminQuestFormTitle">Новый квест</h2>
+        <input type="text" id="adminQuestName" class="neon-input" placeholder="Название квеста">
+        <textarea id="adminQuestDescription" class="neon-textarea" placeholder="Описание квеста"></textarea>
+        <input type="text" id="adminQuestGenre" class="neon-input" placeholder="Жанр (Головоломка, Приключение, Хоррор, Симулятор, Паркур)">
+        <textarea id="adminQuestRules" class="neon-textarea" placeholder="Правила квеста"></textarea>
+        <label style="display:flex;align-items:center;gap:8px;color:var(--text);margin:8px 0;">
+          <input type="checkbox" id="adminQuestBooking"> Требуется бронь
+        </label>
+        <input type="text" id="adminQuestCustomTags" class="neon-input" placeholder="Свои теги (название:цвет, название2:цвет2)">
         
-        <div class="admin-console">
-          <p class="hint">Консоль Minecraft</p>
-          <div class="bot-status" id="botStatus">
-            <span class="status-dot" id="statusDot"></span>
-            <span id="statusText">Проверка...</span>
+        <div class="admin-quest-image">
+          <label style="color:var(--text);display:block;margin-bottom:8px;">Изображение квеста</label>
+          <div class="image-preview" id="adminQuestImagePreview" style="display:none;">
+            <img id="adminQuestImagePreviewImg" src="" style="max-width:100%;border-radius:8px;max-height:150px;">
+            <button id="btnRemoveQuestImage" class="neon-btn secondary" style="margin-top:4px;">Удалить</button>
           </div>
-          <input type="text" id="adminConsoleInput" class="neon-input" placeholder="Введите команду...">
-          <button id="btnAdminConsoleSend" class="neon-btn">Отправить</button>
-          <div id="adminConsoleError" class="error-text"></div>
+          <button id="btnSelectQuestImage" class="neon-btn secondary">Выбрать изображение</button>
+          <input type="file" id="adminQuestImageInput" accept="image/*" style="display:none;">
         </div>
 
-        <button id="btnAdminTickets" class="neon-btn">Тикеты</button>
-
-        <div class="admin-quests-section">
-          <h3 class="neon-title" style="font-size:18px;margin-top:16px;">Управление квестами</h3>
-          
-          <div class="admin-quest-add">
-            <input type="text" id="adminQuestName" class="neon-input" placeholder="Название квеста">
-            <input type="text" id="adminQuestDescription" class="neon-input" placeholder="Описание">
-            <label style="display:flex;align-items:center;gap:8px;color:var(--text);margin:8px 0;">
-              <input type="checkbox" id="adminQuestActive" checked> Активен
-            </label>
-            <button id="btnAdminQuestAdd" class="neon-btn">Добавить квест</button>
-            <div id="adminQuestError" class="error-text"></div>
-          </div>
-
-          <div id="adminQuestsList" class="admin-quests-list"></div>
-
-          <div id="adminEditSection" style="display:none;margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;">
-            <h4 style="color:var(--neon);margin-bottom:8px;">Редактировать квест</h4>
-            <input type="hidden" id="adminEditQuestId">
-            <input type="text" id="adminEditQuestName" class="neon-input" placeholder="Название">
-            <input type="text" id="adminEditQuestDescription" class="neon-input" placeholder="Описание">
-            <label style="display:flex;align-items:center;gap:8px;color:var(--text);margin:8px 0;">
-              <input type="checkbox" id="adminEditQuestActive" checked> Активен
-            </label>
-            <div style="display:flex;gap:8px;">
-              <button id="btnAdminQuestEditSave" class="neon-btn" style="flex:1;">Сохранить</button>
-              <button id="btnAdminQuestEditCancel" class="neon-btn secondary" style="flex:1;">Отмена</button>
-            </div>
-            <div id="adminEditQuestError" class="error-text"></div>
-          </div>
+        <div id="adminQuestPreview" style="display:none;margin-top:16px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;">
+          <h3 style="color:var(--neon);margin-bottom:8px;">Предпросмотр</h3>
+          <div id="adminQuestPreviewContent"></div>
         </div>
 
-        <button id="btnAdminBack" class="neon-btn secondary" style="margin-top:16px;">Назад</button>
+        <button id="btnAdminQuestFormSave" class="neon-btn">Сохранить</button>
+        <button id="btnAdminQuestFormBack" class="neon-btn secondary">Назад</button>
+        <div id="adminQuestError" class="error-text"></div>
+      </div>
+    </div>
+
+    <div id="screen-admin-console" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Консоль Minecraft</h2>
+        <div class="bot-status" id="botStatus">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">Проверка...</span>
+        </div>
+        <input type="text" id="adminConsoleInput" class="neon-input" placeholder="Введите команду...">
+        <button id="btnAdminConsoleSend" class="neon-btn">Отправить</button>
+        <button id="btnAdminConsoleBack" class="neon-btn secondary">Назад</button>
+        <div id="adminConsoleError" class="error-text"></div>
       </div>
     </div>
   </div>
 
-  <div class="bottom-nav">
+  <div class="bottom-nav" style="display:none;">
     <button class="tab-btn active" id="tabProfile" data-screen="screen-profile">
       <span class="tab-icon">👤</span>
       <span class="tab-label">Профиль</span>
