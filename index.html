@@ -79,19 +79,21 @@
         <div class="profile-row"><span>Очки</span><span id="pPoints">—</span></div>
         <div class="profile-row" id="pGameRow" style="display:none"><span>Игра</span><span id="pGame">—</span></div>
         <button id="btnRefresh" class="neon-btn secondary">Обновить</button>
-        <button id="btnSupport" class="neon-btn" style="margin-top:10px;position:relative">
-          Тех.поддержка
-          <span id="supportBadge" class="badge" style="display:none;position:absolute;top:-8px;right:-8px;background:#ff2e63;color:#fff;border-radius:50%;padding:2px 8px;font-size:12px;font-weight:bold;"></span>
-        </button>
+      </div>
+    </div>
+
+    <div id="screen-quests" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Квесты</h2>
+        <div id="questsList" class="quests-list"></div>
       </div>
     </div>
 
     <div id="screen-support" class="screen">
       <div class="neon-card">
-        <h2 class="neon-title">Тех.поддержка</h2>
+        <h2 class="neon-title">Помощь</h2>
         <button id="btnNewTicket" class="neon-btn">Создать тикет</button>
         <div id="ticketsList" class="tickets-list"></div>
-        <button id="btnSupportBack" class="neon-btn secondary">Назад</button>
         <div id="supportError" class="error-text"></div>
       </div>
     </div>
@@ -126,7 +128,38 @@
         <div id="ticketError" class="error-text"></div>
       </div>
     </div>
+
+    <div id="screen-admin" class="screen">
+      <div class="neon-card">
+        <h2 class="neon-title">Администрирование</h2>
+        <button id="btnAdminTickets" class="neon-btn">Тикеты</button>
+        <div class="admin-console">
+          <p class="hint">Консоль Minecraft</p>
+          <input type="text" id="adminConsoleInput" class="neon-input" placeholder="Введите команду...">
+          <button id="btnAdminConsoleSend" class="neon-btn">Отправить</button>
+          <div id="adminConsoleError" class="error-text"></div>
+        </div>
+        <button id="btnAdminBack" class="neon-btn secondary">Назад</button>
+      </div>
+    </div>
   </div>
+
+  <div class="bottom-nav">
+    <button class="tab-btn active" id="tabQuests" data-screen="screen-quests">
+      <span class="tab-icon">📋</span>
+      <span class="tab-label">Квесты</span>
+    </button>
+    <button class="tab-btn" id="tabSupport" data-screen="screen-support">
+      <span class="tab-icon">💬</span>
+      <span class="tab-label">Помощь</span>
+      <span id="supportBadge" class="badge" style="display:none;"></span>
+    </button>
+    <button class="tab-btn" id="tabAdmin" data-screen="screen-admin" style="display:none;">
+      <span class="tab-icon">⚙️</span>
+      <span class="tab-label">Админ</span>
+    </button>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
