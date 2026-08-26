@@ -252,11 +252,6 @@ document.getElementById('btnRefresh').addEventListener('click', async () => {
   } catch (e) {}
 });
 
-document.getElementById('btnSupportBack').addEventListener('click', () => {
-  show('screen-support');
-  loadTickets();
-});
-
 document.getElementById('btnNewTicket').addEventListener('click', () => show('screen-new-ticket'));
 document.getElementById('btnNewTicketBack').addEventListener('click', () => show('screen-support'));
 
