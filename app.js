@@ -4,17 +4,19 @@ const API_URL = 'https://fantastworld.ru:26312';
 let currentNick = '';
 let confirmTimer = null;
 let currentTicketId = null;
-let supportMessages = [];
 let isAdmin = false;
+let ticketPollTimer = null;
+let lastTicketUpdatedAt = null;
+let lastMessagesSignature = '';
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if (id !== 'screen-ticket') stopTicketPolling();
 }
 
 function api(path, options = {}) {
-  const url = `${API_URL}${path}`;
-  return fetch(url, {
+  return fetch(`\( {API_URL} \){path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -29,12 +31,10 @@ function api(path, options = {}) {
 
 async function init() {
   document.title = 'BlazeQuest';
-  
   if (!tg || !tg.initDataUnsafe?.user) {
     show('screen-blocked');
     return;
   }
-
   tg.ready();
   tg.expand();
   tg.setHeaderColor('#0a0a12');
@@ -42,18 +42,11 @@ async function init() {
 
   try {
     const data = await api('/api/profile');
-    if (data.nickname && data.nickname !== ' ') {
+    if (data.nickname) {
       renderProfile(data);
       show('screen-profile');
-      
-      const profile = await api('/api/profile');
-      isAdmin = profile.rank >= 5;
-      
-      const unread = await api('/api/support/unread');
-      if (unread.count > 0) {
-        document.getElementById('supportBadge').style.display = 'inline';
-        document.getElementById('supportBadge').textContent = unread.count;
-      }
+      isAdmin = data.rank >= 5;
+      await updateSupportBadge();
     } else {
       document.getElementById('btnSupportFromReg').style.display = 'block';
       show('screen-register');
@@ -80,26 +73,19 @@ document.getElementById('btnNextNick').addEventListener('click', async () => {
   const nick = document.getElementById('nickInput').value.trim();
   const err = document.getElementById('nickError');
   err.textContent = '';
-
   if (!/^[a-zA-Z0-9_]{3,16}$/.test(nick)) {
     err.textContent = 'Никнейм: 3–16 символов (латиница, цифры, _)';
     return;
   }
-
   currentNick = nick;
   document.getElementById('btnNextNick').disabled = true;
-
   try {
     const res = await api('/api/register/check', {
       method: 'POST',
       body: JSON.stringify({ nickname: nick })
     });
-
-    if (res.taken) {
-      show('screen-taken');
-    } else {
-      await startRealname(nick);
-    }
+    if (res.taken) show('screen-taken');
+    else await startRealname(nick);
   } catch (e) {
     err.textContent = 'Ошибка сервера. Попробуйте позже.';
   } finally {
@@ -114,7 +100,6 @@ async function startRealname(nick) {
       method: 'POST',
       body: JSON.stringify({ nickname: nick })
     });
-
     if (res.status === 'not_found') {
       document.getElementById('confirmText').textContent = `Пожалуйста, зайдите на сервер, чтобы подтвердить ${nick}`;
       document.getElementById('confirmError').textContent = '';
@@ -129,14 +114,13 @@ async function startRealname(nick) {
           clearInterval(confirmTimer);
           btn.disabled = false;
           btn.textContent = 'Далее';
-        } else {
-          btn.textContent = `Далее (${left})`;
-        }
+        } else btn.textContent = `Далее (${left})`;
       }, 1000);
       show('screen-confirm');
     } else if (res.status === 'ok') {
       const profile = await api('/api/profile');
       renderProfile(profile);
+      isAdmin = profile.rank >= 5;
       show('screen-profile');
     } else {
       document.getElementById('nickError').textContent = res.message || 'Ошибка';
@@ -162,6 +146,7 @@ document.getElementById('btnConfirmNext').addEventListener('click', async () => 
     } else if (res.status === 'ok') {
       const profile = await api('/api/profile');
       renderProfile(profile);
+      isAdmin = profile.rank >= 5;
       show('screen-profile');
     } else {
       document.getElementById('confirmError').textContent = res.message || 'Ошибка';
@@ -177,7 +162,6 @@ document.getElementById('btnConfirmBack').addEventListener('click', () => {
   clearInterval(confirmTimer);
   show('screen-register');
 });
-
 document.getElementById('btnBackToNick').addEventListener('click', () => show('screen-register'));
 document.getElementById('btnMyAccount').addEventListener('click', () => show('screen-claim'));
 document.getElementById('btnClaimBack').addEventListener('click', () => show('screen-taken'));
@@ -191,7 +175,6 @@ document.querySelectorAll('.claim-option').forEach(btn => {
 });
 
 document.getElementById('btnClaim1Back').addEventListener('click', () => show('screen-claim'));
-
 document.getElementById('btnSendClaim1').addEventListener('click', async () => {
   const text = document.getElementById('claim1Text').value.trim();
   if (text.length < 5) return;
@@ -231,21 +214,13 @@ document.getElementById('btnSupport').addEventListener('click', () => {
 
 document.getElementById('btnSupportBack').addEventListener('click', () => {
   const profile = document.getElementById('pNick').textContent;
-  if (profile && profile !== '—') {
-    show('screen-profile');
-  } else {
-    show('screen-register');
-  }
+  if (profile && profile !== '—') show('screen-profile');
+  else show('screen-register');
   updateSupportBadge();
 });
 
-document.getElementById('btnNewTicket').addEventListener('click', () => {
-  show('screen-new-ticket');
-});
-
-document.getElementById('btnNewTicketBack').addEventListener('click', () => {
-  show('screen-support');
-});
+document.getElementById('btnNewTicket').addEventListener('click', () => show('screen-new-ticket'));
+document.getElementById('btnNewTicketBack').addEventListener('click', () => show('screen-support'));
 
 document.getElementById('btnSendTicket').addEventListener('click', async () => {
   const text = document.getElementById('ticketText').value.trim();
@@ -253,16 +228,13 @@ document.getElementById('btnSendTicket').addEventListener('click', async () => {
     document.getElementById('ticketError').textContent = 'Минимум 5 символов';
     return;
   }
-
   document.getElementById('btnSendTicket').disabled = true;
   document.getElementById('ticketError').textContent = '';
-
   try {
     const res = await api('/api/support/create', {
       method: 'POST',
       body: JSON.stringify({ text })
     });
-    
     if (res.success) {
       document.getElementById('ticketText').value = '';
       show('screen-support');
@@ -283,32 +255,26 @@ async function loadTickets() {
     const tickets = await api('/api/support/tickets');
     const container = document.getElementById('ticketsList');
     container.innerHTML = '';
-
-    if (tickets.length === 0) {
+    if (!tickets.length) {
       container.innerHTML = '<p class="hint">У вас ещё не было обращений</p>';
       return;
     }
-
     for (const ticket of tickets) {
       const div = document.createElement('div');
       div.className = 'ticket-item';
-
       const statusClass = ticket.status === 'open' ? 'open' : 'closed';
       const statusText = ticket.status === 'open' ? '🟢 Открыт' : '🔴 Закрыт';
-
+      const unreadMark = ticket.unread > 0 ? `<span class="badge">${ticket.unread}</span>` : '';
       div.innerHTML = `
         <div class="ticket-header">
           <span class="ticket-id">#${ticket.id}</span>
-          <span class="ticket-status ${statusClass}">${statusText}</span>
-          <span class="ticket-nick">${ticket.nickname}</span>
+          <span class="ticket-status \( {statusClass}"> \){statusText}</span>
+          <span class="ticket-nick">${ticket.nickname || ''}</span>
+          ${unreadMark}
         </div>
         <div class="ticket-preview">${ticket.lastMessage || 'Нет сообщений'}</div>
       `;
-
-      div.addEventListener('click', () => {
-        openTicket(ticket.id);
-      });
-
+      div.addEventListener('click', () => openTicket(ticket.id));
       container.appendChild(div);
     }
   } catch (e) {
@@ -316,14 +282,19 @@ async function loadTickets() {
   }
 }
 
+function messagesSignature(messages, status) {
+  return status + ':' + messages.map(m => `\( {m.id}: \){m.read ? 1 : 0}`).join(',');
+}
+
 async function openTicket(ticketId) {
   try {
     const ticket = await api(`/api/support/ticket/${ticketId}`);
     currentTicketId = ticketId;
-    supportMessages = ticket.messages || [];
-    
+    lastTicketUpdatedAt = ticket.updatedAt;
+    lastMessagesSignature = messagesSignature(ticket.messages || [], ticket.status);
     show('screen-ticket');
     renderTicket(ticket);
+    startTicketPolling();
   } catch (e) {
     document.getElementById('ticketError').textContent = 'Ошибка загрузки тикета';
   }
@@ -331,7 +302,8 @@ async function openTicket(ticketId) {
 
 function renderTicket(ticket) {
   document.getElementById('ticketIdDisplay').textContent = `#${ticket.id}`;
-  document.getElementById('ticketStatusDisplay').textContent = ticket.status === 'open' ? '🟢 Открыт' : '🔴 Закрыт';
+  document.getElementById('ticketStatusDisplay').textContent =
+    ticket.status === 'open' ? '🟢 Открыт' : '🔴 Закрыт';
 
   const container = document.getElementById('ticketMessages');
   container.innerHTML = '';
@@ -339,105 +311,103 @@ function renderTicket(ticket) {
   let lastSenderId = null;
   let lastSenderType = null;
 
-  const tgUser = tg.initDataUnsafe?.user;
-  const tgAvatarUrl = tgUser?.photo_url || null;
-
   for (const msg of ticket.messages) {
     const div = document.createElement('div');
     const isUser = msg.senderType === 'user';
-    const isAdmin = msg.senderType === 'admin';
-    
     const isGroupStart = lastSenderId !== msg.senderId || lastSenderType !== msg.senderType;
-    
-    div.className = `message ${isUser ? 'user' : 'admin'}`;
-    if (isGroupStart) {
-      div.classList.add('group-start');
-    }
+    div.className = `message \( {isUser ? 'user' : 'admin'} \){isGroupStart ? ' group-start' : ''}`;
 
-    let displayName;
-    let rank = msg.rank || 0;
-    
-    if (rank > 0 && msg.nickname && msg.nickname !== 'null' && msg.nickname !== 'Неизвестно') {
-      displayName = msg.nickname;
-    } else if (msg.telegramId) {
-      displayName = `@${msg.telegramId}`;
-    } else {
-      displayName = 'Неизвестно';
+    let displayName = msg.nickname || 'Неизвестно';
+    if (Number(msg.rank) === 0) {
+      if (!String(displayName).startsWith('@') && !String(displayName).startsWith('id')) {
+        displayName = displayName;
+      }
     }
-
-    const rankDisplay = msg.rankName || '[0] Пользователь';
-    const color = msg.rankColor || '#808080';
 
     const avatarDiv = document.createElement('div');
     avatarDiv.className = 'message-avatar';
-    
-    if (isUser && tgAvatarUrl && isGroupStart) {
-      const img = document.createElement('img');
-      img.src = tgAvatarUrl;
-      img.style.width = '36px';
-      img.style.height = '36px';
-      img.style.borderRadius = '50%';
-      img.style.objectFit = 'cover';
-      avatarDiv.appendChild(img);
-    } else if (isGroupStart) {
-      const avatarLetter = displayName.charAt(0).toUpperCase();
-      avatarDiv.textContent = avatarLetter;
+    if (isGroupStart) {
+      if (msg.avatarUrl) {
+        const img = document.createElement('img');
+        img.src = msg.avatarUrl;
+        img.alt = '';
+        avatarDiv.appendChild(img);
+      } else {
+        avatarDiv.textContent = String(displayName).replace('@', '').charAt(0).toUpperCase() || '?';
+      }
     } else {
       avatarDiv.style.visibility = 'hidden';
     }
 
     const bodyDiv = document.createElement('div');
     bodyDiv.className = 'message-body';
-    
-    const headerDiv = document.createElement('div');
-    headerDiv.className = 'message-header';
-    
-    const senderSpan = document.createElement('span');
-    senderSpan.className = 'message-sender';
-    senderSpan.style.color = color;
-    senderSpan.textContent = `${rankDisplay} ${displayName}`;
-    
-    const timeSpan = document.createElement('span');
-    timeSpan.className = 'message-time';
-    timeSpan.textContent = new Date(msg.timestamp).toLocaleString();
-    
-    headerDiv.appendChild(senderSpan);
-    headerDiv.appendChild(timeSpan);
-    
+
+    if (isGroupStart) {
+      const headerDiv = document.createElement('div');
+      headerDiv.className = 'message-header';
+      const senderSpan = document.createElement('span');
+      senderSpan.className = 'message-sender';
+      senderSpan.style.color = msg.rankColor || '#808080';
+      const rankDisplay = msg.rankName || '[0] Пользователь';
+      senderSpan.textContent = `${rankDisplay} ${displayName}`;
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'message-time';
+      timeSpan.textContent = new Date(msg.timestamp).toLocaleString();
+      headerDiv.appendChild(senderSpan);
+      headerDiv.appendChild(timeSpan);
+      bodyDiv.appendChild(headerDiv);
+    }
+
     const textDiv = document.createElement('div');
     textDiv.className = 'message-text';
     textDiv.textContent = msg.text;
-    
-    bodyDiv.appendChild(headerDiv);
     bodyDiv.appendChild(textDiv);
-    
+
     div.appendChild(avatarDiv);
     div.appendChild(bodyDiv);
     container.appendChild(div);
-    
+
     lastSenderId = msg.senderId;
     lastSenderType = msg.senderType;
   }
+
+  container.scrollTop = container.scrollHeight;
 
   const isOpen = ticket.status === 'open';
   document.getElementById('ticketReplyArea').style.display = isOpen ? 'block' : 'none';
   document.getElementById('btnCloseTicket').style.display = isOpen ? 'block' : 'none';
   document.getElementById('btnCloseTicket').disabled = !isOpen;
-  
-  if (ticket.status === 'closed') {
-    document.getElementById('btnReopenTicket').style.display = isAdmin ? 'block' : 'none';
-  } else {
-    document.getElementById('btnReopenTicket').style.display = 'none';
-  }
+  document.getElementById('btnReopenTicket').style.display = (!isOpen && isAdmin) ? 'block' : 'none';
+  document.getElementById('ticketAdminActions').style.display = isAdmin ? 'block' : 'none';
+}
 
-  if (isAdmin) {
-    document.getElementById('ticketAdminActions').style.display = 'block';
-  } else {
-    document.getElementById('ticketAdminActions').style.display = 'none';
+function startTicketPolling() {
+  stopTicketPolling();
+  ticketPollTimer = setInterval(async () => {
+    if (!currentTicketId) return;
+    try {
+      const ticket = await api(`/api/support/ticket/${currentTicketId}`);
+      const sig = messagesSignature(ticket.messages || [], ticket.status);
+      if (sig !== lastMessagesSignature) {
+        lastMessagesSignature = sig;
+        lastTicketUpdatedAt = ticket.updatedAt;
+        renderTicket(ticket);
+      } else if (ticket.status !== 'open') {
+        renderTicket(ticket);
+      }
+    } catch (e) {}
+  }, 3000);
+}
+
+function stopTicketPolling() {
+  if (ticketPollTimer) {
+    clearInterval(ticketPollTimer);
+    ticketPollTimer = null;
   }
 }
 
 document.getElementById('btnTicketBack').addEventListener('click', () => {
+  stopTicketPolling();
   show('screen-support');
   loadTickets();
   updateSupportBadge();
@@ -445,21 +415,21 @@ document.getElementById('btnTicketBack').addEventListener('click', () => {
 
 document.getElementById('btnSendTicketReply').addEventListener('click', async () => {
   const text = document.getElementById('ticketReply').value.trim();
-  if (text.length < 1) return;
-  
+  if (!text) return;
   document.getElementById('btnSendTicketReply').disabled = true;
-  
   try {
     const res = await api('/api/support/reply', {
       method: 'POST',
       body: JSON.stringify({ ticketId: currentTicketId, text })
     });
-    
     if (res.success) {
       document.getElementById('ticketReply').value = '';
       const ticket = await api(`/api/support/ticket/${currentTicketId}`);
+      lastMessagesSignature = messagesSignature(ticket.messages || [], ticket.status);
       renderTicket(ticket);
       tg.HapticFeedback?.impactOccurred('light');
+    } else {
+      document.getElementById('ticketError').textContent = res.error || 'Ошибка';
     }
   } catch (e) {
     document.getElementById('ticketError').textContent = 'Ошибка отправки';
@@ -470,18 +440,15 @@ document.getElementById('btnSendTicketReply').addEventListener('click', async ()
 
 document.getElementById('btnCloseTicket').addEventListener('click', async () => {
   if (!confirm('Закрыть тикет?')) return;
-
   try {
     document.getElementById('btnCloseTicket').disabled = true;
-
     await api('/api/support/close', {
       method: 'POST',
       body: JSON.stringify({ ticketId: currentTicketId })
     });
-
     const ticket = await api(`/api/support/ticket/${currentTicketId}`);
+    lastMessagesSignature = messagesSignature(ticket.messages || [], ticket.status);
     renderTicket(ticket);
-
     tg.HapticFeedback?.impactOccurred('success');
   } catch (e) {
     document.getElementById('ticketError').textContent = 'Ошибка при закрытии';
@@ -497,6 +464,7 @@ document.getElementById('btnReopenTicket').addEventListener('click', async () =>
       body: JSON.stringify({ ticketId: currentTicketId })
     });
     const ticket = await api(`/api/support/ticket/${currentTicketId}`);
+    lastMessagesSignature = messagesSignature(ticket.messages || [], ticket.status);
     renderTicket(ticket);
     tg.HapticFeedback?.impactOccurred('success');
   } catch (e) {
@@ -517,6 +485,5 @@ async function updateSupportBadge() {
   } catch (e) {}
 }
 
-setInterval(updateSupportBadge, 30000);
-
+setInterval(updateSupportBadge, 15000);
 init();
