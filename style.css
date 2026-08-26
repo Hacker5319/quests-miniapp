@@ -156,6 +156,7 @@ body {
   border-radius: 12px;
   padding: 16px;
   border: 1px solid rgba(255,255,255,0.08);
+  cursor: pointer;
   transition: border-color 0.2s;
 }
 
@@ -173,6 +174,29 @@ body {
 .quest-description {
   color: var(--muted);
   font-size: 14px;
+  margin-top: 4px;
+}
+
+.quest-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255,255,255,0.08);
+  color: var(--muted);
+  margin: 2px 4px 2px 0;
+}
+
+.quest-tag.booking {
+  background: rgba(255, 46, 99, 0.2);
+  color: var(--danger);
+}
+
+.quest-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 4px 0;
 }
 
 .quest-status {
@@ -192,6 +216,52 @@ body {
 .quest-status.inactive {
   background: rgba(255, 255, 255, 0.08);
   color: var(--muted);
+}
+
+.quest-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.quest-detail-section {
+  margin: 12px 0;
+  padding: 12px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+}
+
+.quest-detail-label {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.quest-detail-section p {
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.quest-preview-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.quest-preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 4px 0;
+}
+
+.quest-preview-description {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 4px;
 }
 
 .tickets-list {
@@ -347,12 +417,6 @@ body {
   margin-left: 8px;
 }
 
-.message-unread {
-  color: var(--neon);
-  font-size: 8px;
-  margin-left: 4px;
-}
-
 .message-text {
   font-size: 14px;
   word-wrap: break-word;
@@ -382,16 +446,64 @@ body {
   margin-top: 0;
 }
 
-.admin-console {
-  margin-top: 16px;
-  padding: 16px;
-  background: rgba(255,255,255,0.03);
-  border-radius: 12px;
+.admin-quests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  margin: 12px 0;
+}
+
+.admin-quest-item {
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 12px;
   border: 1px solid rgba(255,255,255,0.08);
 }
 
-.admin-console .hint {
-  margin-bottom: 12px;
+.admin-quest-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-quest-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.admin-quest-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 4px 0;
+}
+
+.admin-quest-description {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.admin-quest-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-quest-actions button {
+  margin-top: 0;
+}
+
+.admin-quest-image {
+  margin: 12px 0;
+}
+
+.image-preview {
+  margin-bottom: 8px;
 }
 
 .bot-status {
@@ -419,61 +531,6 @@ body {
 .status-dot.offline {
   background: var(--danger);
   box-shadow: 0 0 10px rgba(255, 46, 99, 0.5);
-}
-
-.admin-quests-section {
-  margin-top: 16px;
-}
-
-.admin-quest-add {
-  background: rgba(255,255,255,0.03);
-  border-radius: 12px;
-  padding: 16px;
-  border: 1px solid rgba(255,255,255,0.08);
-  margin-bottom: 16px;
-}
-
-.admin-quests-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.admin-quest-item {
-  background: rgba(255,255,255,0.05);
-  border-radius: 10px;
-  padding: 12px;
-  border: 1px solid rgba(255,255,255,0.08);
-}
-
-.admin-quest-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.admin-quest-name {
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--text);
-}
-
-.admin-quest-description {
-  color: var(--muted);
-  font-size: 13px;
-  margin-bottom: 8px;
-}
-
-.admin-quest-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.admin-quest-actions button {
-  margin-top: 0;
 }
 
 .bottom-nav {
